@@ -10,7 +10,7 @@ Build-Depends:
  qttools5-dev-tools,
  qtbase5-private-dev,
  libdtkwidget-dev,
- lxqt-build-tools(>= 0.6.0~),
+ lxqt-build-tools-qt5,
  libglib2.0-dev,
  libsecret-1-dev,
  libgtest-dev,

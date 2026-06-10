@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.5.0 FATAL_ERROR)
 # CMP0000: Call the cmake_minimum_required() command at the beginning of the top-level
 # CMakeLists.txt file even before calling the project() command.
 # The cmake_minimum_required(VERSION) command implicitly invokes the cmake_policy(VERSION)
@@ -11,6 +11,12 @@ include(GenerateExportHeader)
 include(CMakePackageConfigHelpers)
 include(CheckFunctionExists)
 include(CheckIncludeFile)
+link_libraries(uchardet)
+link_libraries(chardet)
+
+pkg_check_modules(chardet REQUIRED chardet)
+include_directories(${chardet_INCLUDE_DIRS})
+link_directories(${chardet_LIBRARY_DIRS})
 
 option(UPDATE_TRANSLATIONS "Update source translation translations/*.ts files" OFF)
 option(BUILD_EXAMPLE "Build example application. Default OFF." OFF)
@@ -32,12 +38,25 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 
 # Minimum Versions
-set(QT_MINIMUM_VERSION "5.7.1")
 set(LXQTBT_MINIMUM_VERSION "0.6.0")
 
-find_package(Qt5Widgets "${QT_MINIMUM_VERSION}" REQUIRED)
-find_package(Qt5LinguistTools "${QT_MINIMUM_VERSION}" REQUIRED)
-find_package(lxqt-build-tools ${LXQTBT_MINIMUM_VERSION} REQUIRED)
+if(DEFINED QT_DESIRED_VERSION)
+  message("Build with setting Qt version!")
+else(DEFINED QT_DESIRED_VERSION)
+    message("Searching for preferred Qt version...")
+  find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
+  set(QT_DESIRED_VERSION ${QT_VERSION_MAJOR})
+endif(DEFINED QT_DESIRED_VERSION)
+
+find_package(Qt${QT_DESIRED_VERSION} REQUIRED COMPONENTS Widgets)
+
+# 先尝试查找 lxqt2-build-tools，失败则查找 lxqt-build-tools
+find_package(lxqt2-build-tools ${LXQTBT_MINIMUM_VERSION} QUIET)
+if(NOT lxqt2-build-tools_FOUND)
+    find_package(lxqt-build-tools ${LXQTBT_MINIMUM_VERSION} REQUIRED)
+endif()
+
+find_package(ICU COMPONENTS i18n uc REQUIRED)
 
 if(USE_UTF8PROC)
     find_package(Utf8Proc REQUIRED)
@@ -56,7 +75,7 @@ if(APPLE)
     endif()
 endif()
 
-set(TERMINALWIDGET_LIBRARY_NAME terminalwidget5)
+set(TERMINALWIDGET_LIBRARY_NAME terminalwidget${QT_DESIRED_VERSION})
 
 remove_definitions(-DQT_NO_CAST_FROM_ASCII -DQT_NO_CAST_TO_ASCII -DQT_NO_CAST_FROM_BYTEARRAY)
 
@@ -98,6 +117,7 @@ set(SRCS
     lib/tools.cpp
     lib/Vt102Emulation.cpp
     lib/EscapeSequenceUrlExtractor.cpp
+    lib/encodes/detectcode.cpp
 )
 
 # Only the Headers that need to be moc'd go here
@@ -127,6 +147,8 @@ set(HDRS
     lib/TerminalDisplay.h
     lib/Vt102Emulation.h
     lib/EscapeSequenceUrlExtractor.h
+    lib/encodes/detectcode.h
+    lib/qtcompat.h
 )
 
 set(UI
@@ -156,10 +178,10 @@ set(HDRS_DISTRIB
 )
 
 option(RUNDIR_KEYBOARD_LAYOUT_FIRST "Load keyboard layouts from application runtime directory" OFF)
+message(STATUS "Use runtime directory keyboard layouts first: ${RUNDIR_KEYBOARD_LAYOUT_FIRST}")
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     set(RUNDIR_KEYBOARD_LAYOUT_FIRST ON) # enable runtime layouts loading for debug
 endif()
-message(STATUS "Use runtime directory keyboard layouts first: ${RUNDIR_KEYBOARD_LAYOUT_FIRST}")
 
 # dirs
 set(KB_LAYOUT_DIR "${CMAKE_INSTALL_FULL_DATADIR}/${TERMINALWIDGET_LIBRARY_NAME}/kb-layouts")
@@ -175,9 +197,17 @@ set(TERMINALWIDGET_INCLUDE_DIR "${CMAKE_INSTALL_FULL_INCLUDEDIR}/${TERMINALWIDGE
 
 CHECK_FUNCTION_EXISTS(updwtmpx HAVE_UPDWTMPX)
 
-qt5_wrap_cpp(MOCS ${HDRS})
-qt5_wrap_ui(UI_SRCS ${UI})
-set(PKG_CONFIG_REQ "Qt5Widgets")
+if(QT_DESIRED_VERSION MATCHES 6)
+  find_package(Qt${QT_DESIRED_VERSION} REQUIRED COMPONENTS Core5Compat)
+  list(APPEND LINK_LIBS Qt${QT_VERSION_MAJOR}::Core5Compat)
+  QT6_WRAP_CPP(MOCS ${HDRS})
+  QT6_WRAP_UI(UI_SRCS ${UI})
+elseif(QT_DESIRED_VERSION MATCHES 5)
+  QT5_WRAP_CPP(MOCS ${HDRS})
+  QT5_WRAP_UI(UI_SRCS ${UI})
+else()
+  message("Not support other Qt version: {QT_DESIRED_VERSION}")
+endif()
 
 lxqt_translate_ts(TERMINALWIDGET_QM
     TRANSLATION_DIR "lib/translations"
@@ -192,7 +222,15 @@ lxqt_translate_ts(TERMINALWIDGET_QM
 )
 
 add_library(${TERMINALWIDGET_LIBRARY_NAME} SHARED ${SRCS} ${MOCS} ${UI_SRCS} ${TERMINALWIDGET_QM})
-target_link_libraries(${TERMINALWIDGET_LIBRARY_NAME} Qt5::Widgets)
+target_link_libraries(${TERMINALWIDGET_LIBRARY_NAME}
+    Qt${QT_VERSION_MAJOR}::Widgets
+    ${LINK_LIBS}
+    ICU::i18n
+    ICU::uc
+    -lm
+    uchardet
+    chardet
+    )
 if (USE_TEST)
     #仅在单元测试模式下设置fvisibility为default
     target_compile_options(${TERMINALWIDGET_LIBRARY_NAME} PUBLIC "-fvisibility=default")

@@ -14,17 +14,21 @@
 #include <QApplication>
 #include <QCoreApplication>
 #include <QDebug>
-
+#include <QLoggingCategory>
 #define GROUPSEARCHWIDTH 172
+
+Q_DECLARE_LOGGING_CATEGORY(remotemanage)
 
 ServerConfigGroupPanel::ServerConfigGroupPanel(QWidget *parent) : CommonPanel(parent)
 {
+    qCDebug(remotemanage) << "ServerConfigGroupPanel constructor";
     Utils::set_Object_Name(this);
     initUI();
 }
 
 void ServerConfigGroupPanel::initUI()
 {
+    qCDebug(remotemanage) << "Enter initUI";
     this->setBackgroundRole(QPalette::Base);
     this->setAutoFillBackground(true);
 
@@ -53,14 +57,12 @@ void ServerConfigGroupPanel::initUI()
     // 没有搜索框，返回按钮仍显示在左边
     hlayout->addStretch();
     hlayout->setSpacing(0);
-    hlayout->setMargin(0);
 
     QVBoxLayout *vlayout = new QVBoxLayout();
     vlayout->setContentsMargins(0, 0, 0, 0);
     vlayout->addSpacing(SPACEHEIGHT);
     vlayout->addLayout(hlayout);
     vlayout->addWidget(m_listWidget);
-    vlayout->setMargin(0);
     vlayout->setSpacing(SPACEHEIGHT);
     setLayout(vlayout);
 
@@ -71,38 +73,47 @@ void ServerConfigGroupPanel::initUI()
     connect(m_rebackButton, &DIconButton::clicked, this, &ServerConfigGroupPanel::rebackPrevPanel);
     connect(m_rebackButton, &IconButton::preFocus, this, &ServerConfigGroupPanel::rebackPrevPanel);
     connect(ServerConfigManager::instance(), &ServerConfigManager::refreshList, this, &ServerConfigGroupPanel::onRefreshList);
+    qCDebug(remotemanage) << "Exit initUI";
 }
 
 inline void ServerConfigGroupPanel::onListViewFocusOut(Qt::FocusReason type)
 {
+    qCDebug(remotemanage) << "Enter ServerConfigGroupPanel::onListViewFocusOut";
     if (!m_isShow) {
+        qCDebug(remotemanage) << "Branch: panel is not shown";
         // 不显示，不处理焦点
         return;
     }
     if (Qt::TabFocusReason == type) {
-        qInfo() << "group focus out!";
+        qCInfo(remotemanage) << "group focus out!";
         QKeyEvent keyPress(QEvent::KeyPress, Qt::Key_Tab, Qt::MetaModifier);
         QApplication::sendEvent(Utils::getMainWindow(this), &keyPress);
         m_listWidget->clearIndex();
     } else if (Qt::BacktabFocusReason == type) {
+        qCDebug(remotemanage) << "Branch: backtab focus reason";
         // 判断是否可见，可见设置焦点
-        if (m_searchEdit->isVisible())
+        if (m_searchEdit->isVisible()) {
+            qCDebug(remotemanage) << "Branch: search edit is visible";
             m_searchEdit->lineEdit()->setFocus();
-        else
+        } else {
+            qCDebug(remotemanage) << "Branch: search edit is not visible";
             m_rebackButton->setFocus();
+        }
 
         m_listWidget->clearIndex();
     } else if (Qt::NoFocusReason == type) {
-        qInfo() << "group NoFocusReason";
+        qCInfo(remotemanage) << "group NoFocusReason";
         int isFocus = false;
         // 列表没有内容，焦点返回到返回键上
-        if (m_listWidget->hasFocus() || m_rebackButton->hasFocus())
+        if (m_listWidget->hasFocus() || m_rebackButton->hasFocus()) {
+            qCDebug(remotemanage) << "Branch: list widget or reback button has focus";
             isFocus  = true;
+        }
 
         int count  = ServerConfigManager::instance()->getServerCount(m_groupName);
         if (0 == count) {
+            qCDebug(remotemanage) << "Branch: server count is 0";
             emit rebackPrevPanel();
-            qInfo() << "showRemoteManagementPanel" << isFocus << count;
             m_isShow = false;
             return;
         }
@@ -112,11 +123,13 @@ inline void ServerConfigGroupPanel::onListViewFocusOut(Qt::FocusReason type)
 
 inline void ServerConfigGroupPanel::onRefreshList()
 {
-    qInfo() << "group refresh list";
+    qCInfo(remotemanage) << "group refresh list";
     if (m_isShow) {
+        qCDebug(remotemanage) << "Branch: panel is shown";
         refreshData(m_groupName);
         QMap<QString, QList<ServerConfig *>> &configMap = ServerConfigManager::instance()->getServerConfigs();
         if (!configMap.contains(m_groupName)) {
+            qCDebug(remotemanage) << "Branch: group not found in config map";
             // 没有这个组 ==> 组内没成员，则返回
             emit rebackPrevPanel();
             m_isShow = false;
@@ -126,37 +139,44 @@ inline void ServerConfigGroupPanel::onRefreshList()
 
 void ServerConfigGroupPanel::refreshData(const QString &groupName)
 {
-    qInfo() << __FUNCTION__;
+    qCDebug(remotemanage) << "Refresh Data!";
     m_groupName = groupName;
     m_listWidget->clearData();
     ServerConfigManager::instance()->refreshServerList(ServerConfigManager::PanelType_Group, m_listWidget, "", groupName);
     refreshSearchState();
+    qCDebug(remotemanage) << "Exit refreshData";
 }
 
 void ServerConfigGroupPanel::setFocusBack()
 {
-    qInfo() << __FUNCTION__;
+    qCDebug(remotemanage) << "Enter setFocusBack";
     // 设置焦点到搜索框
     if (m_searchEdit->isVisible()) {
+        qCDebug(remotemanage) << "Branch: search edit is visible";
         // 显示搜索框
         m_searchEdit->lineEdit()->setFocus();
     } else {
+        qCDebug(remotemanage) << "Branch: search edit is not visible";
         // 没有搜索框
         if (ServerConfigManager::instance()->getServerCount(m_groupName)) {
+            qCDebug(remotemanage) << "Branch: server count > 0";
             setFocus();
             // 没有搜索框,焦点落到列表中
             m_listWidget->setCurrentIndex(0);
         } else {
+            qCDebug(remotemanage) << "server count is 0, emitting rebackPrevPanel";
             // 没有列表，直接显示远程主界面
             emit rebackPrevPanel();
             // 不接受刷新信号的操作
             m_isShow = false;
+            qCDebug(remotemanage) << "Exit setFocusBack";
         }
     }
 }
 
 void ServerConfigGroupPanel::clearAllFocus()
 {
+    qCDebug(remotemanage) << "clearAllFocus";
     m_rebackButton->clearFocus();
     m_searchEdit->clearFocus();
     m_listWidget->clearFocus();
@@ -164,28 +184,35 @@ void ServerConfigGroupPanel::clearAllFocus()
 
 void ServerConfigGroupPanel::handleShowSearchResult()
 {
+    qCDebug(remotemanage) << "handleShowSearchResult";
     QString strFilter = m_searchEdit->text();
     emit showSearchPanel(strFilter);
 }
 
 void ServerConfigGroupPanel::refreshSearchState()
 {
+    qCDebug(remotemanage) << "refreshSearchState";
     if (m_listWidget->count() >= 2) {
+        qCDebug(remotemanage) << "Branch: list widget count >= 2";
         /************************ Add by m000743 sunchengxi 2020-04-22:搜索显示异常 Begin************************/
         m_searchEdit->clearEdit();
         /************************ Add by m000743 sunchengxi 2020-04-22:搜索显示异常  End ************************/
         m_searchEdit->show();
     } else {
+        qCDebug(remotemanage) << "Branch: list widget count < 2";
         m_searchEdit->hide();
     }
 }
 
 void ServerConfigGroupPanel::onItemClicked(const QString &key)
 {
+    qCDebug(remotemanage) << "onItemClicked, key:" << key;
     // 获取远程信息
     ServerConfig *remote = ServerConfigManager::instance()->getServerConfig(key);
-    if (nullptr != remote)
+    if (nullptr != remote) {
+        qCDebug(remotemanage) << "Branch: remote config found";
         emit doConnectServer(remote);
-    else
-        qInfo() << "can't connect to remote" << key;
+    } else {
+        qCWarning(remotemanage) << "can't connect to remote" << key;
+    }
 }

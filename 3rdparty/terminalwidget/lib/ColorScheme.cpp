@@ -22,6 +22,7 @@
 // Own
 #include "ColorScheme.h"
 #include "tools.h"
+#include "qtcompat.h"
 
 // Qt
 #include <QBrush>
@@ -161,8 +162,15 @@ void ColorScheme::setColorTableEntry(int index, const ColorEntry &entry)
 {
     Q_ASSERT(index >= 0 && index < TABLE_COLORS);
 
-    if (!_table) {
-        _table = new ColorEntry[TABLE_COLORS];
+    if ( !_table )
+    {
+      _table = new (std::nothrow) ColorEntry[TABLE_COLORS];
+      if (!_table) {
+        qCritical() << "ColorScheme: Failed to allocate color table (size:"
+                    << TABLE_COLORS << "entries,"
+                    << TABLE_COLORS * sizeof(ColorEntry) << "bytes)";
+        return;
+      }
 
         for (int i = 0; i < TABLE_COLORS; i++)
             _table[i] = defaultTable[i];
@@ -174,8 +182,8 @@ ColorEntry ColorScheme::colorEntry(int index, uint randomSeed) const
 {
     Q_ASSERT(index >= 0 && index < TABLE_COLORS);
 
-    if (randomSeed != 0)
-        qsrand(randomSeed);
+    if ( randomSeed != 0 )
+        srand(randomSeed);
 
     ColorEntry entry = colorTable()[index];
 
@@ -185,9 +193,9 @@ ColorEntry ColorScheme::colorEntry(int index, uint randomSeed) const
         const RandomizationRange &range = _randomTable[index];
 
 
-        int hueDifference = range.hue ? (qrand() % range.hue) - range.hue / 2 : 0;
-        int saturationDifference = range.saturation ? (qrand() % range.saturation) - range.saturation / 2 : 0;
-        int  valueDifference = range.value ? (qrand() % range.value) - range.value / 2 : 0;
+        int hueDifference = range.hue ? (rand() % range.hue) - range.hue/2 : 0;
+        int saturationDifference = range.saturation ? (rand() % range.saturation) - range.saturation/2 : 0;
+        int  valueDifference = range.value ? (rand() % range.value) - range.value/2 : 0;
 
         QColor &color = entry.color;
 
@@ -229,8 +237,16 @@ void ColorScheme::setRandomizationRange(int index, quint16 hue, quint8 saturatio
     Q_ASSERT(hue <= MAX_HUE);
     Q_ASSERT(index >= 0 && index < TABLE_COLORS);
 
-    if (_randomTable == nullptr)
-        _randomTable = new RandomizationRange[TABLE_COLORS];
+    if (_randomTable == nullptr) {
+      _randomTable = new (std::nothrow) RandomizationRange[TABLE_COLORS];
+      if (!_randomTable) {
+        qCritical()
+            << "ColorScheme: Failed to allocate randomization table (size:"
+            << TABLE_COLORS << "entries,"
+            << TABLE_COLORS * sizeof(RandomizationRange) << "bytes)";
+        return;
+      }
+    }
 
     _randomTable[index].hue = hue;
     _randomTable[index].value = value;
@@ -350,9 +366,9 @@ void ColorScheme::readColorEntry(QSettings *s, int index)
                                            QRegularExpression::CaseInsensitiveOption);
         if (hexColorPattern.match(colorStr).hasMatch()) {
             // Parsing is always ok as already matched by the regexp
-            r = colorStr.midRef(1, 2).toInt(nullptr, 16);
-            g = colorStr.midRef(3, 2).toInt(nullptr, 16);
-            b = colorStr.midRef(5, 2).toInt(nullptr, 16);
+            r = colorStr.mid(1, 2).toInt(nullptr, 16);
+            g = colorStr.mid(3, 2).toInt(nullptr, 16);
+            b = colorStr.mid(5, 2).toInt(nullptr, 16);
             ok = true;
         }
     }
@@ -480,8 +496,9 @@ ColorScheme *KDE3ColorSchemeReader::read()
 
     ColorScheme *scheme = new ColorScheme();
 
-    QRegExp comment(QLatin1String("#.*$"));
-    while (!_device->atEnd()) {
+    REG_EXP comment(QLatin1String("#.*$"));
+    while ( !_device->atEnd() )
+    {
         QString line(QString::fromUtf8(_device->readLine()));
         line.remove(comment);
         line = line.simplified();
@@ -489,15 +506,20 @@ ColorScheme *KDE3ColorSchemeReader::read()
         if (line.isEmpty())
             continue;
 
-        if (line.startsWith(QLatin1String("color"))) {
-            if (!readColorLine(line, scheme))
-                qDebug() << "Failed to read KDE 3 color scheme line" << line;
-        } else if (line.startsWith(QLatin1String("title"))) {
-            if (!readTitleLine(line, scheme))
-                qDebug() << "Failed to read KDE 3 color scheme title line" << line;
-        } else {
-            qDebug() << "KDE 3 color scheme contains an unsupported feature, '" <<
-                     line << "'";
+        if ( line.startsWith(QLatin1String("color")) )
+        {
+            if (!readColorLine(line,scheme))
+                qWarning() << "Failed to read KDE 3 color scheme line" << line;
+        }
+        else if ( line.startsWith(QLatin1String("title")) )
+        {
+            if (!readTitleLine(line,scheme))
+                qWarning() << "Failed to read KDE 3 color scheme title line" << line;
+        }
+        else
+        {
+            qWarning() << "KDE 3 color scheme contains an unsupported feature, '" <<
+                line << "'";
         }
     }
 
@@ -581,11 +603,11 @@ void ColorSchemeManager::loadAllColorSchemes()
             failed++;
     }
 
-    if (failed > 0) {
-        qDebug() << "failed to load " << failed << " color schemes.";
+    if ( failed > 0 ){
+        qWarning() << "failed to load " << failed << " color schemes.";
     }
 
-    qDebug() << "load all color schemes";
+    qInfo() << "load all color schemes";
     //qDebug() << "nativeColorSchemes" << nativeColorSchemes ;
     //qDebug() << "kde3ColorSchemes" << kde3ColorSchemes;
     _haveLoadedAll = true;
@@ -609,19 +631,21 @@ bool ColorSchemeManager::loadKDE3ColorScheme(const QString &filePath)
     scheme->setName(QFileInfo(file).baseName());
     file.close();
 
-    if (scheme->name().isEmpty()) {
-        qDebug() << "color scheme name is not valid.";
+    if (scheme->name().isEmpty())
+    {
+        qWarning() << "color scheme name is not valid.";
         delete scheme;
         return false;
     }
 
     QFileInfo info(filePath);
 
-    if (!_colorSchemes.contains(info.baseName()))
-        _colorSchemes.insert(scheme->name(), scheme);
-    else {
-        qDebug() << "color scheme with name" << scheme->name() << "has already been" <<
-                 "found, ignoring.";
+    if ( !_colorSchemes.contains(info.baseName()) )
+        _colorSchemes.insert(scheme->name(),scheme);
+    else
+    {
+        qWarning() << "color scheme with name" << scheme->name() << "has already been" <<
+            "found, ignoring.";
         delete scheme;
     }
 
@@ -668,17 +692,21 @@ bool ColorSchemeManager::loadColorScheme(const QString &filePath)
     scheme->setName(schemeName);
     scheme->read(filePath);
 
-    if (scheme->name().isEmpty()) {
-        qDebug() << "Color scheme in" << filePath << "does not have a valid name and was not loaded.";
+    if (scheme->name().isEmpty())
+    {
+        qWarning() << "Color scheme in" << filePath << "does not have a valid name and was not loaded.";
         delete scheme;
         return false;
     }
 
-    if (!_colorSchemes.contains(schemeName)) {
-        _colorSchemes.insert(schemeName, scheme);
-    } else {
-        qDebug() << "color scheme with name" << schemeName << "has already been" <<
-                 "found, ignoring.";
+    if ( !_colorSchemes.contains(schemeName) )
+    {
+        _colorSchemes.insert(schemeName,scheme);
+    }
+    else
+    {
+        qWarning() << "color scheme with name" << schemeName << "has already been" <<
+            "found, ignoring.";
 
         delete scheme;
     }
@@ -736,8 +764,10 @@ bool ColorSchemeManager::deleteColorScheme(const QString &name)
     if (QFile::remove(path)) {
         _colorSchemes.remove(name);
         return true;
-    } else {
-        qDebug() << "Failed to remove color scheme -" << path;
+    }
+    else
+    {
+        qWarning() << "Failed to remove color scheme -" << path;
         return false;
     }
 }
@@ -750,7 +780,6 @@ bool ColorSchemeManager::deleteColorScheme(const QString &name)
 *******************************************************************************/
 void ColorSchemeManager::reloadColorScheme(const QString &origName)
 {
-    qDebug() << "reloadColorScheme:" << origName;
     if (!origName.endsWith(QLatin1String(".colorscheme")) || !QFile::exists(origName)) {
         return;
     }
@@ -762,7 +791,7 @@ void ColorSchemeManager::reloadColorScheme(const QString &origName)
     scheme->read(origName);
 
     if (scheme->name().isEmpty()) {
-        qDebug() << "Color scheme in" << origName << "does not have a valid name and was not loaded.";
+        qWarning() << "Color scheme in" << origName << "does not have a valid name and was not loaded.";
         delete scheme;
         return;
     }

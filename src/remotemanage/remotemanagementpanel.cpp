@@ -10,36 +10,48 @@
 #include <DLog>
 #include <DHiDPIHelper>
 
+#ifdef QT_DEBUG
+Q_LOGGING_CATEGORY(remotemanage,"org.deepin.terminal.remotemanage")
+#else
+Q_LOGGING_CATEGORY(remotemanage,"org.deepin.terminal.remotemanage",QtInfoMsg)
+#endif
+
 RemoteManagementPanel::RemoteManagementPanel(QWidget *parent) : CommonPanel(parent)
 {
+    qCDebug(remotemanage) << "RemoteManagementPanel constructor";
     Utils::set_Object_Name(this);
     initUI();
 }
 
 void RemoteManagementPanel::refreshPanel()
 {
+    qCDebug(remotemanage) << "Enter refreshPanel";
     // 清空搜索框
     clearSearchInfo();
     // 初始化列表
     ServerConfigManager::instance()->refreshServerList(ServerConfigManager::PanelType_Manage, m_listWidget);
     // 刷新搜索框状态
     refreshSearchState();
+    qCDebug(remotemanage) << "Exit refreshPanel";
 }
 
 void RemoteManagementPanel::setFocusInPanel()
 {
-    qInfo() << "RemoteManagementPanel focus in Panel.";
+    qCInfo(remotemanage) << "RemoteManagementPanel focus in Panel.";
     if (m_searchEdit->isVisible()) {
+        qCDebug(remotemanage) << "search edit is visible, setting focus";
         // 搜索框显示
         // 设置焦点
         m_searchEdit->lineEdit()->setFocus();
     } else if (m_listWidget->isVisible()) {
+        qCDebug(remotemanage) << "list widget is visible, setting focus";
         // 列表显示
         /******** Modify by ut000610 daizhengwen 2020-07-27:bug#39775 Begin***************/
         // 将焦点设置在列表里的第一项
         m_listWidget->setCurrentIndex(0);
         /********************* Modify by ut000610 daizhengwen End ************************/
     } else {
+        qCDebug(remotemanage) << "setting focus on add button";
         // 将焦点显示在添加按钮上
         m_pushButton->setFocus();
     }
@@ -47,35 +59,42 @@ void RemoteManagementPanel::setFocusInPanel()
 
 void RemoteManagementPanel::setFocusBack(const QString &strGroup)
 {
-    qInfo() << "RemoteManagementPanel return from RemoteManageGroup";
+    qCInfo(remotemanage) << "RemoteManagementPanel return from RemoteManageGroup";
     // 返回前判断之前是否要有焦点
     if (m_listWidget->getFocusState()) {
+        qCDebug(remotemanage) << "list widget needs focus";
         // 要有焦点
         // 找到分组的新位置
         int index = m_listWidget->indexFromString(strGroup, ItemFuncType_Group);
         if (index < 0) {
+            qCDebug(remotemanage) << "group not found, getting next index";
             // 小于0代表没找到 获取下一个
             index = m_listWidget->getNextIndex(m_listWidget->currentIndex());
         }
 
         if (index >= 0) {
+            qCDebug(remotemanage) << "setting focus to found index";
             // 找得到, 设置焦点
             m_listWidget->setCurrentIndex(index);
         } else {
+            qCDebug(remotemanage) << "no valid index, setting focus to add button";
             // 没找到焦点设置到添加按钮
             m_pushButton->setFocus();
         }
     }
     // 不要焦点
     else {
+        qCDebug(remotemanage) << "no focus needed, focusing current page";
         MainWindow *w = Utils::getMainWindow(this);
-        if(w)
+        if(w) {
             w->focusCurrentPage();
+        }
     }
 }
 
 void RemoteManagementPanel::clearListFocus()
 {
+    // qCDebug(remotemanage) << "Enter RemoteManagementPanel::clearListFocus";
     m_pushButton->clearFocus();
     m_listWidget->clearFocus();
     m_searchEdit->clearFocus();
@@ -84,33 +103,41 @@ void RemoteManagementPanel::clearListFocus()
 
 int RemoteManagementPanel::getListIndex()
 {
+    // qCDebug(remotemanage) << "Enter RemoteManagementPanel::getListIndex";
     return m_listWidget->currentIndex();
 }
 
 void RemoteManagementPanel::refreshSearchState()
 {
+    // qCDebug(remotemanage) << "Enter RemoteManagementPanel::refreshSearchState";
     if (m_listWidget->count() >= 2) {
+        qCDebug(remotemanage) << "list count >= 2, showing search edit";
         /************************ Add by m000743 sunchengxi 2020-04-22:搜索显示异常 Begin************************/
         m_searchEdit->clearEdit();
         /************************ Add by m000743 sunchengxi 2020-04-22:搜索显示异常  End ************************/
         m_searchEdit->show();
     } else {
+        qCDebug(remotemanage) << "list count < 2, hiding search edit";
         m_searchEdit->hide();
     }
 
     static bool hasStretch = false;
     if (m_listWidget->count() <= 0) {
+        qCDebug(remotemanage) << "list is empty, showing empty state";
         m_textLabel->show();
         m_imageLabel->show();
         if (hasStretch == false) {
+            qCDebug(remotemanage) << "adding stretch layout";
             dynamic_cast<QVBoxLayout*>(this->layout())->insertLayout(3, m_backLayout);
             dynamic_cast<QVBoxLayout*>(this->layout())->insertStretch(4);
             hasStretch = true;
         }
     } else {
+        qCDebug(remotemanage) << "list has items, hiding empty state";
         m_textLabel->hide();
         m_imageLabel->hide();
         if (hasStretch == true) {
+            qCDebug(remotemanage) << "removing stretch layout";
             this->layout()->removeItem(this->layout()->itemAt(3));
             this->layout()->removeItem(this->layout()->itemAt(3));
             hasStretch = false;
@@ -120,31 +147,69 @@ void RemoteManagementPanel::refreshSearchState()
 
 void RemoteManagementPanel::onItemClicked(const QString &key)
 {
+    qCDebug(remotemanage) << "onItemClicked, key:" << key;
     // 获取远程信息
     ServerConfig *remote = ServerConfigManager::instance()->getServerConfig(key);
-    if (nullptr != remote)
+    if (nullptr != remote) {
+        qCDebug(remotemanage) << "remote config found, emitting connect signal";
         emit doConnectServer(remote);
-    else
-        qInfo() << "can't connect to remote" << key;
+    } else {
+        qCInfo(remotemanage) << "can't connect to remote" << key;
+    }
+    qCDebug(remotemanage) << "Exit onItemClicked";
 }
 
 void RemoteManagementPanel::showCurSearchResult()
 {
+    qCDebug(remotemanage) << "showCurSearchResult";
     QString strTxt = m_searchEdit->text();
-    if (strTxt.isEmpty())
+    if (strTxt.isEmpty()) {
+        qCDebug(remotemanage) << "search text is empty, returning";
         return;
+    }
 
     emit showSearchPanel(strTxt);
+    qCDebug(remotemanage) << "Exit showCurSearchResult";
 }
 
 void RemoteManagementPanel::showAddServerConfigDlg()
 {
+    qCInfo(remotemanage) << "RemoteManagementPanel show add server config dialog.";
     // 判断控件是否有焦点
     bool focusState = m_pushButton->hasFocus();
     // 弹窗显示
     Service::instance()->setIsDialogShow(window(), true);
 
     ServerConfigOptDlg *dlg = new ServerConfigOptDlg(ServerConfigOptDlg::SCT_ADD, nullptr, this);
+    connect(dlg, &ServerConfigOptDlg::finished, this, [ = ](int result) {
+        qCDebug(remotemanage) << "Lambda: dialog finished with result:" << result;
+        // 弹窗隐藏或消失
+        Service::instance()->setIsDialogShow(window(), false);
+        // 先判断是否要焦点
+        if (focusState) {
+            qCDebug(remotemanage) << "restoring focus to add button";
+            // 让焦点在平面上
+            setFocus();
+            // 添加完，将焦点设置在添加按钮上
+            m_pushButton->setFocus();
+        }
+        if (QDialog::Accepted == result) {
+            qCDebug(remotemanage) << "dialog accepted, scrolling to new server";
+            int index = m_listWidget->indexFromString(dlg->getServerName());
+            m_listWidget->setScroll(index);
+        }
+    });
+    dlg->show();
+}
+
+void RemoteManagementPanel::showAddGroupConfigDlg(const QString &groupName)
+{
+    // 判断控件是否有焦点55
+    bool focusState = m_pushButton->hasFocus();
+    // 弹窗显示
+    Service::instance()->setIsDialogShow(window(), true);
+
+    GroupConfigOptDlg *dlg = new GroupConfigOptDlg(groupName, this);
     connect(dlg, &ServerConfigOptDlg::finished, this, [ = ](int result) {
         // 弹窗隐藏或消失
         Service::instance()->setIsDialogShow(window(), false);
@@ -153,11 +218,10 @@ void RemoteManagementPanel::showAddServerConfigDlg()
             // 让焦点在平面上
             setFocus();
             // 添加完，将焦点设置在添加按钮上
-            m_pushButton->setFocus();
+            m_addGroupButton->setFocus();
         }
         if (QDialog::Accepted == result) {
-            int index = m_listWidget->indexFromString(dlg->getServerName());
-            m_listWidget->setScroll(index);
+            refreshPanel();
         }
     });
     dlg->show();
@@ -190,6 +254,7 @@ void RemoteManagementPanel::showAddGroupConfigDlg(const QString &groupName)
 
 void RemoteManagementPanel::initUI()
 {
+    qCDebug(remotemanage) << "Enter initUI";
     this->setBackgroundRole(QPalette::Base);
     this->setAutoFillBackground(true);
 
@@ -202,13 +267,25 @@ void RemoteManagementPanel::initUI()
     m_listWidget->setObjectName("RemoteManageListWidget");
     m_addGroupButton = new DPushButton(this);
     m_addGroupButton->setObjectName("AddServerGroupButton");
+    m_addGroupButton->setFocusPolicy(Qt::TabFocus);
     m_pushButton = new DPushButton(this);
     m_pushButton->setObjectName("RemoteAddPushButton");
+    m_pushButton->setFocusPolicy(Qt::TabFocus);
 
     m_searchEdit->setClearButtonEnabled(true);
 
+    m_addGroupButton->setFixedHeight(COMMONHEIGHT);
     m_addGroupButton->setText(tr("Add Group"));
+    m_pushButton->setFixedHeight(COMMONHEIGHT);
     m_pushButton->setText(tr("Add Server"));
+
+    QFontMetrics fm(m_pushButton->font());
+    int padding = fm.height() * 0.6;
+    int textWidth1 = fm.horizontalAdvance(m_pushButton->text()) + padding;
+    int textWidth2 = fm.horizontalAdvance(m_addGroupButton->text()) + padding;
+    int maxWidth = qMax(textWidth1, textWidth2);
+    m_pushButton->setMinimumWidth(maxWidth);
+    m_addGroupButton->setMinimumWidth(maxWidth);
 
     m_textLabel = new DLabel(this);
     m_textLabel->resize(136, 18);
@@ -225,7 +302,6 @@ void RemoteManagementPanel::initUI()
     hlayout->addWidget(m_searchEdit);
     hlayout->addSpacing(SPACEWIDTH);
     hlayout->setSpacing(0);
-    hlayout->setMargin(0);
 
     QHBoxLayout *textLayout = new QHBoxLayout();
     textLayout->addStretch();
@@ -245,17 +321,13 @@ void RemoteManagementPanel::initUI()
     m_backLayout->addLayout(textLayout);
     m_backLayout->addStretch();
     m_backLayout->setSpacing(0);
-    m_backLayout->setMargin(0);
 
     QHBoxLayout *btnLayout = new QHBoxLayout();
-    btnLayout->setContentsMargins(0, 0, 0, 0);
-    btnLayout->addSpacing(SPACEWIDTH);
+    btnLayout->setContentsMargins(SPACEWIDTH, SPACEWIDTH, SPACEWIDTH, SPACEWIDTH);
     btnLayout->addWidget(m_pushButton);
     btnLayout->addSpacing(SPACEWIDTH);
     btnLayout->addWidget(m_addGroupButton);
-    btnLayout->addSpacing(SPACEWIDTH);
     btnLayout->setSpacing(0);
-    btnLayout->setMargin(0);
 
     QVBoxLayout *vlayout = new QVBoxLayout();
     vlayout->setContentsMargins(0, 0, 0, 0);
@@ -264,7 +336,6 @@ void RemoteManagementPanel::initUI()
     vlayout->addWidget(m_listWidget);
     vlayout->addLayout(btnLayout);
     vlayout->addSpacing(SPACEHEIGHT);
-    vlayout->setMargin(0);
     vlayout->setSpacing(SPACEHEIGHT);
     setLayout(vlayout);
 
@@ -276,22 +347,34 @@ void RemoteManagementPanel::initUI()
     connect(m_listWidget, &ListView::groupModify, this, &RemoteManagementPanel::showAddGroupConfigDlg);
     connect(m_listWidget, &ListView::listItemCountChange, this, &RemoteManagementPanel::refreshSearchState);
     connect(ServerConfigManager::instance(), &ServerConfigManager::refreshList, this, [ = ]() {
-        if (m_isShow)
+        qCDebug(remotemanage) << "Lambda: server config refresh signal received";
+        if (m_isShow) {
+            qCDebug(remotemanage) << "panel is shown, refreshing";
             refreshPanel();
+        }
     });
     connect(m_listWidget, &ListView::focusOut, this, [ = ](Qt::FocusReason type) {
+        qCDebug(remotemanage) << "Lambda: list widget focus out signal received";
         if (Qt::TabFocusReason == type || Qt::NoFocusReason == type) {
+            qCDebug(remotemanage) << "tab or no focus reason, setting focus to add button";
             // 下一个 或 列表为空， 焦点定位到添加按钮上
             m_pushButton->setFocus();
             m_listWidget->clearIndex();
-            qInfo() << "set focus on add pushButton";
+            qCInfo(remotemanage) << "set focus on add pushButton";
         } else if (Qt::BacktabFocusReason == type) {
+            qCDebug(remotemanage) << "back tab focus reason";
             // 判断是否可见，可见设置焦点
             if (m_searchEdit->isVisible()) {
+                qCDebug(remotemanage) << "search edit is visible, setting focus";
                 m_searchEdit->lineEdit()->setFocus();
                 m_listWidget->clearIndex();
-                qInfo() << "set focus on add search edit";
+                qCInfo(remotemanage) << "set focus on add search edit";
             }
         }
     });
+
+    // 显式设置 Tab 焦点顺序，匹配视觉布局
+    setTabOrder(m_searchEdit->lineEdit(), m_listWidget);
+    setTabOrder(m_listWidget, m_pushButton);
+    setTabOrder(m_pushButton, m_addGroupButton);
 }

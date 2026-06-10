@@ -195,6 +195,13 @@ public:
     void setDeleteMode(const EraseMode &deleteMode);
 
     /**
+     * @brief 判断当前是否可以分屏
+     * @param ori 分屏方向
+     * @return true 可以分屏 / false 不可以分屏
+     */
+    bool canSplit(Qt::Orientation ori);
+
+    /**
      * @brief 设置标签标题格式（全局设置）
      * @author ut000610 戴正文
      * @param tabFormat
@@ -306,6 +313,16 @@ public slots:
      * @param isSuccess 启用shell是否成功 true 替换了shell false 替换shell但启动失败
      */
     void onShellMessage(QString currentShell, bool isSuccess);
+
+    /**
+     * @brief Handle OSC52 clipboard request
+     * @param target Clipboard target ('c', 'p', 's', '0')
+     * @param base64Data Base64-encoded data
+     *
+     * @author dzw1995
+     * @date 2026-03-14
+     */
+    void handleOSC52Clipboard(char target, const QString &base64Data);
 
 signals:
     void termRequestRenameTab(QString newTabName);
@@ -464,7 +481,7 @@ private:
     //是否准备远程
     bool m_remotePasswordIsReady = false;
 
-    // 9:6
+    // 9:6 ratio for minimum terminal size
     static const int MIN_WIDTH = 180;
     static const int MIN_HEIGHT = 120;
 };

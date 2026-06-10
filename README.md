@@ -16,6 +16,8 @@ Deepin Terminal is an advanced terminal emulator with workspace , multiple windo
   - dtkwidget-dev
   - dtkgui-dev
 * lxqt-build-tools(>= 0.6.0)
+* libutf8proc-dev
+* libatspi2.0-dev
 * libglib2.0-dev
 * libsecret-1-dev
 

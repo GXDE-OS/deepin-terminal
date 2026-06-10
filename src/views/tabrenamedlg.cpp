@@ -13,16 +13,22 @@
 #include <QKeyEvent>
 #include <QTimer>
 #include <QDebug>
+#include <QLoggingCategory>
 
+Q_DECLARE_LOGGING_CATEGORY(views)
 TabRenameDlg::TabRenameDlg(QWidget *parent) :  DAbstractDialog(parent)
 {
+    qCDebug(views) << "TabRenameDlg constructor enter";
     initUi();
     initContentWidget();
     initConnections();
+    qCDebug(views) << "TabRenameDlg constructor exit";
 }
 
 void TabRenameDlg::initUi()
 {
+    qCDebug(views) << "TabRenameDlg::initUi enter";
+
     setWindowModality(Qt::ApplicationModal);
     // 设置最小值 => 以免一开始挤在一起
     setMinimumWidth(SETTING_DIALOG_WIDTH);
@@ -82,49 +88,63 @@ void TabRenameDlg::initUi()
 
 void TabRenameDlg::addContent(QWidget *content)
 {
+    qCDebug(views) << "Enter TabRenameDlg::addContent";
     Q_ASSERT(nullptr != m_contentLayout);
 
+    qCDebug(views) << "Branch: Adding content widget to layout";
     m_contentLayout->addWidget(content);
 }
 
 QLayout *TabRenameDlg::getContentLayout()
 {
+    // qCDebug(views) << "Enter TabRenameDlg::getContentLayout";
     return m_contentLayout;
 }
 
 void TabRenameDlg::setText(const QString &tabTitleFormat, const QString &remoteTabTitleFormat)
 {
+    // qCDebug(views) << "Enter TabRenameDlg::setText";
     setNormalLineEditText(tabTitleFormat);
     setRemoteLineEditText(remoteTabTitleFormat);
 }
 
 void TabRenameDlg::setNormalLineEditText(const QString &text)
 {
+    qCDebug(views) << "TabRenameDlg::setNormalLineEditText:" << text;
+
     m_tabTitleEdit->getInputedit()->setText(text);
 }
 
 void TabRenameDlg::setRemoteLineEditText(const QString &text)
 {
+    qCDebug(views) << "TabRenameDlg::setRemoteLineEditText:" << text;
+
     m_remoteTabTitleEdit->getInputedit()->setText(text);
 }
 
 
 QLineEdit *TabRenameDlg::getRemoteTabTitleEdit() const
 {
+    // qCDebug(views) << "Enter TabRenameDlg::getRemoteTabTitleEdit";
     return m_remoteTabTitleEdit->getInputedit()->lineEdit();
 }
 
 void TabRenameDlg::setFocusOnEdit(bool isRemote)
 {
+    qCDebug(views) << "TabRenameDlg::setFocusOnEdit isRemote:" << isRemote;
+
     QLineEdit *lineEdit = nullptr;
     if (isRemote) {
+        qCDebug(views) << "Branch: Remote mode, using remote tab title edit";
         // 连接远程时，设置需要操作的输入框为远程输入框
         lineEdit = getRemoteTabTitleEdit();
     } else {
+        qCDebug(views) << "Branch: Normal mode, using normal tab title edit";
         // 设置需要操作的输入框为非远程输入框
         lineEdit = getTabTitleEdit();
     }
 
+    qCDebug(views) << "Branch: Setting focus and selecting all text";
     // 设置焦点，全选输入框的内容
     lineEdit->setFocus();
     lineEdit->selectAll();
@@ -132,23 +152,30 @@ void TabRenameDlg::setFocusOnEdit(bool isRemote)
 
 QLineEdit *TabRenameDlg::getTabTitleEdit() const
 {
+    // qCDebug(views) << "Enter TabRenameDlg::getTabTitleEdit";
     return m_tabTitleEdit->getInputedit()->lineEdit();
 }
 
 void TabRenameDlg::initContentWidget()
 {
+    qCDebug(views) << "TabRenameDlg::initContentWidget enter";
+
     m_mainLayout = new QVBoxLayout();
     m_mainLayout->setObjectName("mainLayout");//Add by ut001000 renfeixiang 2020-08-13
     m_mainLayout->setContentsMargins(10, 0, 10, 10);
 
+    qCDebug(views) << "Branch: Creating content widget";
     QWidget *contentwidget = new QWidget(this);
     contentwidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
+    qCDebug(views) << "Branch: Initializing UI components";
     initTitleLabel();
     initRenameWidget(false);
     initRenameWidget(true);
+    updateRowLabelWidth();
     initButtonWidget();
 
+    qCDebug(views) << "Branch: Adding widgets to layout";
     // 添加控件
     m_mainLayout->setSpacing(10);
     m_mainLayout->addWidget(m_titlelabel);
@@ -162,6 +189,7 @@ void TabRenameDlg::initContentWidget()
 
     m_mainLayout->addWidget(m_buttonWidget);
 
+    qCDebug(views) << "Branch: Setting up content widget layout";
     contentwidget->setLayout(m_mainLayout);
     addContent(contentwidget);
     // 设置确认按钮为enter后响应的默认按钮
@@ -169,42 +197,107 @@ void TabRenameDlg::initContentWidget()
     m_confirmButton->setDefault(true);
 }
 
+void TabRenameDlg::updateRowLabelWidth()
+{
+    if (!m_tabTitleEdit || !m_remoteTabTitleEdit) {
+        return;
+    }
+
+    // Keep changes minimal: don't extend TabRenameWidget API; fetch children directly.
+    auto *normalLabel = m_tabTitleEdit->findChild<QLabel *>();
+    auto *remoteLabel = m_remoteTabTitleEdit->findChild<QLabel *>();
+    if (!normalLabel || !remoteLabel) {
+        return;
+    }
+
+    // Find the "Insert" button inside the widget (there is only one DPushButton here).
+    auto *normalBtn = m_tabTitleEdit->findChild<DPushButton *>();
+    auto *remoteBtn = m_remoteTabTitleEdit->findChild<DPushButton *>();
+
+    const int normalW = normalLabel->sizeHint().width();
+    const int remoteW = remoteLabel->sizeHint().width();
+    int labelW = qMax(normalW, remoteW);
+
+    // Prevent layout overflow (and visual overlap) when translated label text is long.
+    // Row available width is dialog width minus known margins:
+    // - m_mainLayout left/right margins (10 + 10)
+    // - inner content layout left/right margins (20 + 20)
+    const int dialogW = width() > 0 ? width() : SETTING_DIALOG_WIDTH;
+    const QMargins mainMargins = m_mainLayout ? m_mainLayout->contentsMargins() : QMargins(10, 0, 10, 0);
+    const int innerMarginsLR = 20 + 20;
+    const int rowAvailW = dialogW - mainMargins.left() - mainMargins.right() - innerMarginsLR;
+
+    // Reserve widths for: input edit + insert button + spacing.
+    // Input edit is fixed width, so minimumWidth() is reliable.
+    const int spacing = 10; // TabRenameWidget layout spacing
+    const int inputW = m_tabTitleEdit->getInputedit() ? m_tabTitleEdit->getInputedit()->minimumWidth() : 0;
+    const int btnW = qMax(normalBtn ? normalBtn->sizeHint().width() : 0,
+                          remoteBtn ? remoteBtn->sizeHint().width() : 0);
+    const int reservedW = inputW + btnW + 2 * spacing;
+    const int maxLabelW = rowAvailW - reservedW;
+    if (maxLabelW > 0) {
+        // Give label a tiny extra padding so the following input edit starts a bit more to the right
+        // (helps avoid slight clipping in some locales), but never exceed the available width.
+        const int kLabelExtraPadding = 6;
+        labelW = qMin(labelW + kLabelExtraPadding, maxLabelW);
+    }
+
+    if (labelW <= 0) {
+        return;
+    }
+
+    normalLabel->setFixedWidth(labelW);
+    remoteLabel->setFixedWidth(labelW);
+}
+
 void TabRenameDlg::initConnections()
 {
+    qCDebug(views) << "TabRenameDlg::initConnections enter";
+
     connect(m_cancelButton, &DPushButton::clicked, this, [ = ] {
+        qCDebug(views) << "Lambda: Cancel button clicked";
         reject();
         close();
     });
 
+    qCDebug(views) << "Branch: Connecting confirm button";
     connect(m_confirmButton, &DSuggestButton::clicked, this, [ = ] {
-        qInfo() << "confirm rename title";
+        qCInfo(views) << "confirm rename title";
         QString tabTitleFormat = getTabTitleEdit()->text();
         QString remoteTabTitleFormat = getRemoteTabTitleEdit()->text();
         emit tabTitleFormatRename(tabTitleFormat, remoteTabTitleFormat);
         close();
     });
 
+    qCDebug(views) << "Branch: Connecting close button";
     connect(m_closeButton, &DPushButton::clicked, this, [ = ] {
+        qCDebug(views) << "Lambda: Close button clicked";
         close();
     });
 
 #ifdef DTKWIDGET_CLASS_DSizeMode
+    qCDebug(views) << "Branch: Setting up size mode handling";
     updateSizeMode();
     connect(DGuiApplicationHelper::instance(), &DGuiApplicationHelper::sizeModeChanged, this, &TabRenameDlg::updateSizeMode);
     // 字体变更时进行重新布局
     connect(DGuiApplicationHelper::instance(), &DGuiApplicationHelper::fontChanged, this, [this](){
         if (isVisible() && layout()) {
+            qCDebug(views) << "Branch: Dialog is visible and has layout, updating";
             layout()->invalidate();
+            updateRowLabelWidth();
             // 根据新界面布局，刷新界面大小
             updateGeometry();
             QTimer::singleShot(0, this, [=](){ resize(SETTING_DIALOG_WIDTH, minimumSizeHint().height()); });
         }
     });
+#else
+    qCDebug(views) << "Branch: Size mode handling not available";
 #endif
 }
 
 void TabRenameDlg::initTitleLabel()
 {
+    qCDebug(views) << "Enter TabRenameDlg::initTitleLabel";
     m_titlelabel = new DLabel(QObject::tr("Rename title"), this);
     m_titlelabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     m_titlelabel->setAlignment(Qt::AlignCenter);
@@ -213,17 +306,21 @@ void TabRenameDlg::initTitleLabel()
 
 void TabRenameDlg::initRenameWidget(bool isRemote)
 {
+    qCDebug(views) << "Enter TabRenameDlg::initRenameWidget with isRemote:" << isRemote;
     QHBoxLayout *TAbLayout = new QHBoxLayout();
     TAbLayout->setContentsMargins(0, 0, 0, 0);
 
+    qCDebug(views) << "Branch: Creating rename widget";
     TabRenameWidget *renameWidget = new TabRenameWidget(isRemote);
     TAbLayout->addWidget(renameWidget);
 
     if (!isRemote) {
+        qCDebug(views) << "Branch: Creating normal widget";
         m_normalWidget = new QWidget;
         m_normalWidget->setLayout(TAbLayout);
         m_tabTitleEdit = renameWidget;
     } else {
+        qCDebug(views) << "Branch: Creating remote widget";
         m_remoteWidget = new QWidget;
         m_remoteWidget->setLayout(TAbLayout);
         m_remoteTabTitleEdit = renameWidget;
@@ -232,23 +329,29 @@ void TabRenameDlg::initRenameWidget(bool isRemote)
 
 void TabRenameDlg::initButtonWidget()
 {
+    qCDebug(views) << "Enter TabRenameDlg::initButtonWidget";
     m_buttonWidget = new QWidget;
 
+    qCDebug(views) << "Branch: Creating button layout";
     QHBoxLayout *buttonTAbLayout = new QHBoxLayout;
     buttonTAbLayout->setContentsMargins(0, 0, 0, 0);
     buttonTAbLayout->setSpacing(10);
 
+    qCDebug(views) << "Branch: Creating cancel button";
     m_cancelButton = new DPushButton(QObject::tr("Cancel", "button"));
     Utils::setSpaceInWord(m_cancelButton);
     DFontSizeManager::instance()->bind(m_cancelButton, DFontSizeManager::T6);
 
+    qCDebug(views) << "Branch: Creating confirm button";
     m_confirmButton = new DSuggestButton(QObject::tr("Confirm", "button"));
     Utils::setSpaceInWord(m_confirmButton);
     DFontSizeManager::instance()->bind(m_confirmButton, DFontSizeManager::T6);
 
+    qCDebug(views) << "Branch: Creating vertical line";
     m_verticalLine = new DVerticalLine;
     m_verticalLine->setFixedSize(1, 28);
 
+    qCDebug(views) << "Branch: Adding buttons to layout";
     buttonTAbLayout->addWidget(m_cancelButton);
     buttonTAbLayout->addWidget(m_verticalLine);
     buttonTAbLayout->addWidget(m_confirmButton);
@@ -262,14 +365,20 @@ void TabRenameDlg::initButtonWidget()
  */
 void TabRenameDlg::updateSizeMode()
 {
+    qCDebug(views) << "Enter TabRenameDlg::updateSizeMode";
+
 #ifdef DTKWIDGET_CLASS_DSizeMode
+    qCDebug(views) << "Branch: Size mode handling available";
+
     if (DGuiApplicationHelper::isCompactMode()) {
+        qCDebug(views) << "Branch: Compact mode detected, applying compact layout";
         m_titleBar->setFixedHeight(WIN_TITLE_BAR_HEIGHT_COMPACT);
         m_logoIcon->setPixmap(QIcon::fromTheme("deepin-terminal").pixmap(QSize(ICON_CTX_SIZE_24, ICON_CTX_SIZE_24)));
         m_closeButton->setIconSize(QSize(ICONSIZE_40_COMPACT, ICONSIZE_40_COMPACT));
         m_verticalLine->setFixedSize(1, VERTICAL_HEIGHT_COMPACT);
 
     } else {
+        qCDebug(views) << "Branch: Normal mode detected, applying normal layout";
         m_titleBar->setFixedHeight(WIN_TITLE_BAR_HEIGHT);
         m_logoIcon->setPixmap(QIcon::fromTheme("deepin-terminal").pixmap(QSize(ICON_CTX_SIZE_32, ICON_CTX_SIZE_32)));
         m_closeButton->setIconSize(QSize(ICONSIZE_50, ICONSIZE_50));
@@ -277,10 +386,17 @@ void TabRenameDlg::updateSizeMode()
     }
 
     if (layout()) {
+        qCDebug(views) << "Branch: Layout exists, invalidating and updating";
         layout()->invalidate();
     }
+
+    updateRowLabelWidth();
+
+    qCDebug(views) << "Branch: Updating geometry";
     // 根据新界面布局，刷新界面大小
     updateGeometry();
     QTimer::singleShot(0, this, [=](){ resize(SETTING_DIALOG_WIDTH, minimumSizeHint().height()); });
+#else
+    qCDebug(views) << "Branch: Size mode handling not available";
 #endif
 }

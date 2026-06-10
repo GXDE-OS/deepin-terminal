@@ -1,5 +1,4 @@
-// Copyright (C) 2019 ~ 2020 Uniontech Software Technology Co.,Ltd
-// SPDX-FileCopyrightText: 2023 UnionTech Software Technology Co., Ltd.
+// SPDX-FileCopyrightText: 2019-2023 UnionTech Software Technology Co., Ltd.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -21,6 +20,7 @@
 
 
 DWIDGET_USE_NAMESPACE
+
 
 /**
  * @brief 全局的后台服务类
@@ -85,12 +85,10 @@ public:
     }
 
     /**
-     * @brief 重置设置框的所有者
+     * @brief 重置设置框的所有者，setParent(nullptr)
+     * @warning 父控件(终端窗口)关闭销毁前必须调用
      */
-    inline void resetSettingOwner()
-    {
-        m_settingOwner = nullptr;
-    }
+    void resetSettingOwner();
 
     /**
      * @brief i从term数量的角度判断是否允许继续创建
@@ -221,6 +219,11 @@ public slots:
     void slotSettingsDialogFinished(int result);
 
     /**
+     * @brief 处理窗口特效打开/关闭时，相关设置项目的显示/隐藏
+     */
+    void slotWMChanged();
+
+    /**
      * @brief 自定义主题对话框关闭后的处理
      * @param result:DialogCode { Rejected, Accepted }
      */
@@ -267,6 +270,7 @@ private:
     QMap<QString, QString>      m_shellsMap;
     qint64                      m_entryTime                         = 0;      // 记录进入的时间，只有创建窗口时，才会来取用这个时间
     bool                        m_mainTerminalIsStarted             = false;
+    bool                        m_mainTerminalIsInitWM             = false;
 };
 
 #endif // SERVICE_H

@@ -26,16 +26,16 @@
 #include <DSettingsGroup>
 #include <DSettingsOption>
 #include <DSettingsWidgetFactory>
-#include <DThemeManager>
+// #include <DThemeManager>
 #include <DTitlebar>
 #include <DFileDialog>
 #include <DAboutDialog>
-#include <DImageButton>
+// #include <DImageButton>
 #include <DLog>
 #include <DWindowManagerHelper>
+#include <DSysInfo>
 
 #include <QApplication>
-#include <QDesktopWidget>
 #include <QInputDialog>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -48,6 +48,14 @@
 #include <QVBoxLayout>
 #include <QMap>
 #include <QScreen>
+#include <QLoggingCategory>
+#include <QActionGroup>
+
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+#include <QDesktopWidget>
+#else
+#include <QScreen>
+#endif
 
 #include <fstream>
 
@@ -67,6 +75,65 @@ DWIDGET_USE_NAMESPACE
 // 定义雷神窗口边缘,接近边缘光标变化图标
 #define QUAKE_EDGE 5
 
+// Edition helpers
+static inline bool isCommunityEdition()
+{
+    return Dtk::Core::DSysInfo::uosEditionType() == Dtk::Core::DSysInfo::UosCommunity;
+}
+
+static inline bool isProfessionalEdition()
+{
+    return Dtk::Core::DSysInfo::uosEditionType() == Dtk::Core::DSysInfo::UosProfessional;
+}
+
+#ifdef QT_DEBUG
+Q_LOGGING_CATEGORY(mainprocess,"org.deepin.terminal")
+#else
+Q_LOGGING_CATEGORY(mainprocess,"org.deepin.terminal",QtInfoMsg)
+#endif
+
+SwitchThemeMenu::SwitchThemeMenu(const QString &title, QWidget *parent): QMenu(title, parent)
+{
+    qCDebug(mainprocess) << "Enter SwitchThemeMenu constructor";
+}
+
+void SwitchThemeMenu::leaveEvent(QEvent *)
+{
+    // qCDebug(mainprocess) << "Enter SwitchThemeMenu::leaveEvent";
+    //鼠标停靠悬浮判断
+    bool ishover = this->property("hover").toBool();
+    if (!ishover) {
+        qCDebug(mainprocess) << "Branch: not hovering, emitting check theme item signal";
+        emit mainWindowCheckThemeItemSignal();
+    }
+}
+
+void SwitchThemeMenu::hideEvent(QHideEvent *)
+{
+    // qCDebug(mainprocess) << "Enter SwitchThemeMenu::hideEvent";
+    hoveredThemeStr = "";
+    emit menuHideSetThemeSignal();
+}
+
+void SwitchThemeMenu::enterEvent(EnterEvent *event)
+{
+    // qCDebug(mainprocess) << "Enter SwitchThemeMenu::enterEvent";
+    hoveredThemeStr = "";
+    return QMenu::enterEvent(event);
+}
+
+void SwitchThemeMenu::keyPressEvent(QKeyEvent *event)
+{
+    // qCDebug(mainprocess) << "Enter SwitchThemeMenu::keyPressEvent";
+    //fix bug#64969主题中点击tab键不可以切换主题
+    //内置主题屏蔽 除了 上下左右回车键的其他按键响应 处理bug#53439
+    if (event->key() != Qt::Key_Space) {
+        qCDebug(mainprocess) << "Branch: key is not Space, emitting check theme signal";
+        emit mainWindowCheckThemeItemSignal();
+        return QMenu::keyPressEvent(event);
+    }
+}
+
 MainWindow::MainWindow(TermProperties properties, QWidget *parent)
     : DMainWindow(parent)
     , m_menu(new QMenu(this))
@@ -78,6 +145,8 @@ MainWindow::MainWindow(TermProperties properties, QWidget *parent)
     , m_isQuakeWindow(properties[QuakeMode].toBool())
     , m_winInfoConfig(new QSettings(getWinInfoConfigPath(), QSettings::IniFormat, this))
 {
+    qCDebug(mainprocess) << "MainWindow constructing";
+
     /******** Add by ut001000 renfeixiang 2020-08-13:增加 Begin***************/
     m_menu->setObjectName("MainWindowQMenu");
     m_centralWidget->setObjectName("MainWindowCentralQWidget");
@@ -88,23 +157,26 @@ MainWindow::MainWindow(TermProperties properties, QWidget *parent)
     static int id = 0;
     m_MainWindowID = ++id;
     if (0 == m_ReferedAppStartTime) {
+        qCDebug(mainprocess) << "Branch: first time initializing app start time";
         // 主进程的启动时间存在APP中
         TerminalApplication *app = static_cast<TerminalApplication *>(qApp);
         m_ReferedAppStartTime = app->getStartTime();
-        qInfo() << "[main app] Start Time = "
-                << QDateTime::fromMSecsSinceEpoch(m_ReferedAppStartTime).toString("yyyy-MM-dd hh:mm:ss:zzz");
+        qCInfo(mainprocess) << "The time when the main program starts.[Start Time:"
+                << QDateTime::fromMSecsSinceEpoch(m_ReferedAppStartTime).toString("yyyy-MM-dd hh:mm:ss:zzz") << "]";
     } else {
-        qInfo() << "[sub app] Start Time = "
-                << QDateTime::fromMSecsSinceEpoch(m_ReferedAppStartTime).toString("yyyy-MM-dd hh:mm:ss:zzz");
+        qCInfo(mainprocess)  << "The time when the subroutine starts.[Start Time:"
+                << QDateTime::fromMSecsSinceEpoch(m_ReferedAppStartTime).toString("yyyy-MM-dd hh:mm:ss:zzz") << "]";
     }
     m_CreateWindowTime = Service::instance()->getEntryTime();
-    qInfo() << "MainWindow Create Time = "
-            << QDateTime::fromMSecsSinceEpoch(m_CreateWindowTime).toString("yyyy-MM-dd hh:mm:ss:zzz");
+    qCInfo(mainprocess)  << "Time when the main window was created. [ Create Time:"
+            << QDateTime::fromMSecsSinceEpoch(m_CreateWindowTime).toString("yyyy-MM-dd hh:mm:ss:zzz") << "]";;
 }
 
 void MainWindow::initUI()
 {
+    qCDebug(mainprocess) << "Initializing MainWindow UI";
     initWindow();
+    
     // Plugin may need centralWidget() to work so make sure initPlugin() is after setCentralWidget()
     // Other place (eg. create titlebar menu) will call plugin method so we should create plugins before init other
     // parts.
@@ -114,34 +186,42 @@ void MainWindow::initUI()
     initWindowAttribute();
     initFileWatcher();
 
+    qCDebug(mainprocess) << "Branch: installing event filter";
     qApp->installEventFilter(this);
 }
 
 void MainWindow::initWindow()
 {
+    qCDebug(mainprocess) << "Initializing window attributes";
     setAttribute(Qt::WA_TranslucentBackground);
     setMinimumSize(m_MinWidth, m_MinHeight);
     setEnableBlurWindow(Settings::instance()->backgroundBlur());
     setWindowIcon(QIcon::fromTheme("deepin-terminal"));
 
     // Init layout
-    m_centralLayout->setMargin(0);
+    m_centralLayout->setContentsMargins(0, 0, 0, 0);
     m_centralLayout->setSpacing(0);
     m_centralLayout->addWidget(m_termStackWidget);
     setCentralWidget(m_centralWidget);
+    qCDebug(mainprocess) << "Window initialization completed";
 }
 
 inline void MainWindow::slotTabBarClicked(int index, QString tabIdentifier)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotTabBarClicked with index:" << index << "identifier:" << tabIdentifier;
     //DTabBar在左右移动时右侧会出现空白，点击会导致crash，这里加个判断防止index出现非法的情况
-    if (index < 0)
+    if (index < 0) {
+        qCDebug(mainprocess) << "Branch: invalid index, returning";
         return;
+    }
 
+    qCDebug(mainprocess) << "Getting tab page for index:" << index;
     TermWidgetPage *tabPage = qobject_cast<TermWidgetPage *>(m_termStackWidget->widget(index));
     TermWidget *term = tabPage->currentTerminal();
     bool bIdle = !(term->hasRunningProcess());
 
     if (bIdle && isTabChangeColor(tabIdentifier)) {
+        qCDebug(mainprocess) << "Branch: tab is idle and color needs change";
         m_tabVisitMap.insert(tabIdentifier, true);
         m_tabChangeColorMap.insert(tabIdentifier, false);
         m_tabbar->removeNeedChangeTextColor(tabIdentifier);
@@ -150,54 +230,81 @@ inline void MainWindow::slotTabBarClicked(int index, QString tabIdentifier)
 
 inline void MainWindow::slotTabCurrentChanged(int index)
 {
-    const QString identifier = m_tabbar->identifier(index);
-    focusPage(identifier);
+    // qCDebug(mainprocess) << "Enter MainWindow::slotTabCurrentChanged with index:" << index;
+
+    // 记录切换前页面：如果用户在“有程序运行中”切走，该标签页需要在程序结束(idle)后高亮提醒。
+    // 否则：如果程序是在该页前台启动的，onTermIsIdle(bIdle=false) 会因为 activeTab 而不标记 needChange，
+    // 导致切走后程序结束无法触发变色（即用户反馈的问题场景）。
+    TermWidgetPage *oldPage = currentPage();
+    const QString newTabIdentifier = m_tabbar->identifier(index);
+    const QString oldTabIdentifier = oldPage ? oldPage->identifier() : QString();
+    if (!oldTabIdentifier.isEmpty() && oldTabIdentifier != newTabIdentifier) {
+        TermWidget *oldTerm = oldPage->currentTerminal();
+        const bool oldIdle = (oldTerm == nullptr) ? true : !(oldTerm->hasRunningProcess());
+
+        // 只有在“切走时仍有运行进程”的情况下，才标记 needChange，等待 idle 后变色。
+        // 如果该标签已处于“变色提醒”状态，则不覆盖。
+        if (!oldIdle && !isTabChangeColor(oldTabIdentifier)) {
+            m_tabChangeColorMap.insert(oldTabIdentifier, false);
+            DGuiApplicationHelper *appHelper = DGuiApplicationHelper::instance();
+            DPalette pa = appHelper->standardPalette(appHelper->themeType());
+            m_tabbar->setNeedChangeTextColor(oldTabIdentifier, pa.color(DPalette::Highlight));
+        }
+    }
+
+    focusPage(newTabIdentifier);
     updateWindowTitle();
 }
 
 inline void MainWindow::slotTabAddRequested()
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::slotTabAddRequested";
     createNewTab();
 }
 
 inline void MainWindow::slotTabCloseRequested(int index)
 {
-
+    // qCDebug(mainprocess) << "Enter MainWindow::slotTabCloseRequested with index:" << index;
     closeTab(m_tabbar->identifier(index));
 }
 
 inline void MainWindow::slotMenuCloseTab(QString Identifier)
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::slotMenuCloseTab with identifier:" << Identifier;
     closeTab(Identifier);
 }
 
 // TAB菜单发来的关闭其它窗口请求,需要逐一关闭
 inline void MainWindow::slotMenuCloseOtherTab(QString Identifier)
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::slotMenuCloseOtherTab with identifier:" << Identifier;
     closeOtherTab(Identifier);
 }
 
 inline void MainWindow::slotShowRenameTabDialog(QString Identifier)
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::slotShowRenameTabDialog with identifier:" << Identifier;
     // 获取标签选中的tab对应的标签标题
     getPageByIdentifier(Identifier)->showRenameTitleDialog();
 }
 
 void MainWindow::initTabBar()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::initTabBar";
     m_tabbar = new TabBar(this);
     m_tabbar->setFocusPolicy(Qt::NoFocus);
 
+    qCDebug(mainprocess) << "Connecting tab bar signals";
     connect(m_tabbar, &TabBar::tabBarClicked, this, &MainWindow::slotTabBarClicked);
 
     // 点击TAB上页触发
-    connect(m_tabbar, &DTabBar::currentChanged, this, &MainWindow::slotTabCurrentChanged, Qt::QueuedConnection);
+    connect(m_tabbar, &DTabBar::currentChanged, this, &MainWindow::slotTabCurrentChanged);
 
     // 点击TAB上的＂＋＂触发
-    connect(m_tabbar, &DTabBar::tabAddRequested, this, &MainWindow::slotTabAddRequested, Qt::QueuedConnection);
+    connect(m_tabbar, &DTabBar::tabAddRequested, this, &MainWindow::slotTabAddRequested);
 
     // 点击TAB上的＂X＂触发
-    connect(m_tabbar, &DTabBar::tabCloseRequested, this, &MainWindow::slotTabCloseRequested, Qt::QueuedConnection);
+    connect(m_tabbar, &DTabBar::tabCloseRequested, this, &MainWindow::slotTabCloseRequested);
 
     // TAB菜单发来的关闭请求
     connect(m_tabbar, &TabBar::menuCloseTab, this, &MainWindow::slotMenuCloseTab);
@@ -209,29 +316,40 @@ void MainWindow::initTabBar()
 
     // 如果此时是拖拽的窗口，暂时先不添加tab(默认添加tab后会新建工作区)
     // 需要使用拖入/拖出标签对应的那个TermWidgetPage控件
-    if (m_properties[DragDropTerminal].toBool())
+    if (m_properties[DragDropTerminal].toBool()) {
+        qCDebug(mainprocess) << "Branch: drag drop terminal detected, skipping tab addition";
         return;
+    }
 
     addTab(m_properties);
+    qCDebug(mainprocess) << "Tab bar initialization completed";
 }
 
 inline void MainWindow::slotOptionButtonPressed()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotOptionButtonPressed";
     showPlugin(PLUGIN_TYPE_NONE);
     // 判断是否超过最大数量限制
     QList<QAction *> actionList = m_menu->actions();
     for (auto item : actionList) {
         if (tr("New window") == item->text()) {
+            // qCDebug(mainprocess) << "Branch: found new window action";
             // 菜单根据数量自动设置true or false
-            item->setEnabled(Service::instance()->isCountEnable());
+            bool enabled = Service::instance()->isCountEnable();
+            // qCDebug(mainprocess) << "Setting new window action enabled:" << enabled;
+            item->setEnabled(enabled);
         }
     }
+
+    //选中当前的主题项
+    qCDebug(mainprocess) << "Checking current theme item";
+    checkThemeItem();
 }
 
 inline void MainWindow::slotClickNewWindowTimeout()
 {
     // 创建新的窗口
-    qInfo() << "menu click new window";
+    qCInfo(mainprocess)  << "Create a new window using the New Window button in the title bar menu.";
 
     TermWidgetPage *tabPage = currentPage();
     TermWidget *term = tabPage->currentTerminal();
@@ -241,77 +359,101 @@ inline void MainWindow::slotClickNewWindowTimeout()
 
 inline void MainWindow::slotNewWindowActionTriggered()
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::slotNewWindowActionTriggered";
     // 等待菜单消失  此处影响菜单创建窗口的性能
     m_createTimer->start(50);
 }
 
 void MainWindow::initOptionButton()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::initOptionButton";
     // 全屏退出按钮
     // DTK的全屏按钮不能满足UI要求，隐去DTK最右侧的全屏
     QWidget *dtkbutton = titlebar()->findChild<QWidget *>("DTitlebarDWindowQuitFullscreenButton");
-    if (dtkbutton != nullptr)
+    if (dtkbutton != nullptr) {
+        // qCDebug(mainprocess) << "Branch: found DTK quit fullscreen button, hiding it";
         dtkbutton->hide();
-    else
-        qInfo() << "can not found DTitlebarDWindowQuitFullscreenButton in DTitlebar";
+    } else {
+        qCWarning(mainprocess) << "can not found DTitlebarDWindowQuitFullscreenButton in DTitlebar";
+    }
 
     // option button
+    qCDebug(mainprocess) << "Looking for DTK option button";
     DIconButton *optionBtn = titlebar()->findChild<DIconButton *>("DTitlebarDWindowOptionButton");
     if (optionBtn != nullptr) {
+        qCDebug(mainprocess) << "Branch: found DTK option button, connecting signal";
         // mainwindow的设置按钮触发
         connect(titlebar()->findChild<DIconButton *>("DTitlebarDWindowOptionButton"), &DIconButton::pressed, this, &MainWindow::slotOptionButtonPressed);
     } else {
-        qInfo() << "can not found DTitlebarDWindowOptionButton in DTitlebar";
+        qCWarning(mainprocess) << "can not found DTitlebarDWindowOptionButton in DTitlebar";
     }
 }
 
 void MainWindow::initOptionMenu()
 {
+    qCDebug(mainprocess) << "Initializing titlebar menu";
     titlebar()->setMenu(m_menu);
     /******** Modify by m000714 daizhengwen 2020-04-03: 新建窗口****************/
     // 防止创建新窗口的action被多次触发
+    qCDebug(mainprocess) << "Creating timer for new window action";
     m_createTimer = new QTimer(this);
     // 设置定时器,等待菜单消失,触发一次,防止多次被触发
     m_createTimer->setSingleShot(true);
+    qCDebug(mainprocess) << "Creating new window action";
     QAction *newWindowAction(new QAction(tr("New window"), this));
     connect(m_createTimer, &QTimer::timeout, this, &MainWindow::slotClickNewWindowTimeout);
     connect(newWindowAction, &QAction::triggered, this, &MainWindow::slotNewWindowActionTriggered);
     m_menu->addAction(newWindowAction);
     /********************* Modify by m000714 daizhengwen End ************************/
+    qCDebug(mainprocess) << "Adding plugin menus";
     for (auto &plugin : m_plugins) {
         QAction *pluginMenu = plugin->titlebarMenu(this);
         // 取消Encoding插件的菜单展示
-        if (plugin->getPluginName() == PLUGIN_TYPE_ENCODING)
+        if (plugin->getPluginName() == PLUGIN_TYPE_ENCODING) {
+            // qCDebug(mainprocess) << "Branch: skipping encoding plugin menu";
             continue;
+        }
 
-        if (pluginMenu)
+        if (pluginMenu) {
+            // qCDebug(mainprocess) << "Branch: adding plugin menu for" << plugin->getPluginName();
             m_menu->addAction(pluginMenu);
+        }
     }
 
+    qCDebug(mainprocess) << "Creating settings action";
     QAction *settingAction(new QAction(tr("Settings"), this));
     m_menu->addAction(settingAction);
     m_menu->addSeparator();
 
     //禁掉dtk主题菜单
+    qCDebug(mainprocess) << "Disabling DTK theme menu";
     titlebar()->setSwitchThemeMenuVisible(false);
     //增加主题菜单
+    qCDebug(mainprocess) << "Adding custom theme menu items";
     addThemeMenuItems();
 
+    qCDebug(mainprocess) << "Connecting settings action";
     connect(settingAction, &QAction::triggered, Service::instance(), &Service::slotShowSettingsDialog);
 }
 
 inline void MainWindow::slotFileChanged()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotFileChanged";
     QFileSystemWatcher *fileWatcher = qobject_cast<QFileSystemWatcher *>(sender());
-    if (nullptr == fileWatcher)
+    if (nullptr == fileWatcher) {
+        qCDebug(mainprocess) << "Branch: file watcher is null, returning";
         return;
+    }
+
     emit  Service::instance()->hostnameChanged();
     //这句话去了之后filechanged信号只能触发一次
+    qCDebug(mainprocess) << "Re-adding hostname path to file watcher";
     fileWatcher->addPath(HOSTNAME_PATH);
 }
 
 void MainWindow::initFileWatcher()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::initFileWatcher";
     QFileSystemWatcher *fileWatcher  = new QFileSystemWatcher(this);
     fileWatcher->addPath(HOSTNAME_PATH);
     //bug 53565 ut000442 hostname被修改后，全部窗口触发一次修改标题
@@ -320,8 +462,10 @@ void MainWindow::initFileWatcher()
 
 void MainWindow::initPlugins()
 {
+    qCDebug(mainprocess) << "Initializing plugins";
     // Todo: real plugin loader and plugin support.
     EncodePanelPlugin *encodePlugin = new EncodePanelPlugin(this);
+    qCInfo(mainprocess) << "Created EncodePanelPlugin";
     encodePlugin->initPlugin(this);
 
     customCommandPlugin = new CustomCommandPlugin(this);
@@ -337,66 +481,86 @@ void MainWindow::initPlugins()
 
 MainWindow::~MainWindow()
 {
+    qCDebug(mainprocess) << "MainWindow destructing";
 }
 
 void MainWindow::setDefaultLocation()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::setDefaultLocation";
     resize(WINDOW_DEFAULT_SIZE);
     singleFlagMove();
 }
 
 void MainWindow::singleFlagMove()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::singleFlagMove";
     if (m_properties[SingleFlag].toBool()) {
         Dtk::Widget::moveToCenter(this);
-        qInfo() << "SingleFlag move" ;
+        qCInfo(mainprocess)  << "The window moves to the center of the screen" ;
     }
 }
 
 bool MainWindow::isTabVisited(const QString &tabIdentifier)
 {
-    return m_tabVisitMap.value(tabIdentifier);
+    bool visited = m_tabVisitMap.value(tabIdentifier);
+    // qCDebug(mainprocess) << "Tab visited status:" << visited;
+    return visited;
 }
 
 bool MainWindow::isTabChangeColor(const QString &tabIdentifier)
 {
-    return m_tabChangeColorMap.value(tabIdentifier);
+    // qCDebug(mainprocess) << "Enter MainWindow::isTabChangeColor with identifier:" << tabIdentifier;
+    bool changeColor = m_tabChangeColorMap.value(tabIdentifier);
+    // qCDebug(mainprocess) << "Tab change color status:" << changeColor;
+    return changeColor;
 }
 
 void MainWindow::addTab(TermProperties properties, bool activeTab)
 {
+    qCDebug(mainprocess) << "Adding new tab with properties, activeTab:" << activeTab;
     qint64 startTime = QDateTime::currentMSecsSinceEpoch();
     //如果不允许新建标签，则返回
-    if (!beginAddTab())
+    if (!beginAddTab()){
+        qCWarning(mainprocess) << "Cannot create new labels";
         return;
-
+    }
+    qCDebug(mainprocess) << "Creating new TermWidgetPage";
     TermWidgetPage *termPage = new TermWidgetPage(properties, this);
 
     // pageID存在 tab中，所以page增删改操作都要由tab发起。
+    qCDebug(mainprocess) << "Adding tab to tab bar";
     int index = m_tabbar->addTab(termPage->identifier(), termPage->getCurrentTerminalTitle());
-    qInfo() << "addTab index" << index;
+    qCInfo(mainprocess)  << "The associated index(" << index <<") of the newly added label.";
     endAddTab(termPage, activeTab, index, startTime);
 }
 
 void MainWindow::addTabWithTermPage(const QString &tabName, bool activeTab, bool isVirtualAdd, TermWidgetPage *page, int insertIndex)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::addTabWithTermPage with tabName:" << tabName << "activeTab:" << activeTab << "isVirtualAdd:" << isVirtualAdd << "insertIndex:" << insertIndex;
     qint64 startTime = QDateTime::currentMSecsSinceEpoch();
     //如果不允许新建标签，则返回
-    if (!beginAddTab())
+    qCDebug(mainprocess) << "Checking if tab addition is allowed";
+    if (!beginAddTab()) {
+        qCDebug(mainprocess) << "Branch: tab addition not allowed, returning";
         return;
+    }
 
     TermWidgetPage *termPage = page;
 
-    if (-1 == insertIndex)
+    if (-1 == insertIndex) {
+        qCDebug(mainprocess) << "Branch: insert index is -1, setting to current index + 1";
         insertIndex = m_tabbar->currentIndex() + 1;
+    }
 
     // pageID存在 tab中，所以page增删改操作都要由tab发起。
+    qCDebug(mainprocess) << "Inserting tab at index:" << insertIndex;
     int index = m_tabbar->insertTab(insertIndex, page->identifier(), tabName);
     m_tabbar->setTabText(termPage->identifier(), tabName);
-    qInfo() << "insertTab index" << index;
+    qCInfo(mainprocess)  << "Insert the associated index("<< index << ") of the label";
 
     //拖拽过程中存在一种标签预览模式，此时不需要真实添加
     if (!isVirtualAdd) {
+        qCDebug(mainprocess) << "Branch: not virtual add, setting parent and finishing tab addition";
         termPage->setParentMainWindow(this);
         endAddTab(termPage, activeTab, index, startTime);
     }
@@ -404,36 +568,46 @@ void MainWindow::addTabWithTermPage(const QString &tabName, bool activeTab, bool
 
 bool MainWindow::beginAddTab()
 {
-    /***add by ut001121 zhangmeng 修复BUG#24452 点击“+”按钮新建工作区，自定义命令/编码/远程管理插件未消失***/
+    qCDebug(mainprocess) << "Begin adding new tab";
+    /***add by ut001121 zhangmeng 修复BUG#24452 点击"+"按钮新建工作区，自定义命令/编码/远程管理插件未消失***/
     showPlugin(PLUGIN_TYPE_NONE);
 
+    qCDebug(mainprocess) << "Checking widget count limit";
     if (WindowsManager::instance()->widgetCount() >= MAXWIDGETCOUNT) {
+        qCDebug(mainprocess) << "Branch: widget count exceeds limit";
         // 没有雷神，且是雷神让通过，不然不让通过
         if (!(nullptr == WindowsManager::instance()->getQuakeWindow() && m_isQuakeWindow)) {
             // 非雷神窗口不得超过MAXWIDGETCOUNT
-            qInfo() << "addTab failed, can't create number more than " << MAXWIDGETCOUNT;
+            qCInfo(mainprocess)  << "addTab failed, can't create number more than " << MAXWIDGETCOUNT;
             return false;
         }
     }
 
+    qCDebug(mainprocess) << "Tab addition is allowed";
     return true;
 }
 
 inline void MainWindow::slotLastTermClosed(const QString &identifier)
 {
+    qCDebug(mainprocess) << "Last terminal closed in tab:" << identifier;
     closeTab(identifier);
 }
 
 void MainWindow::endAddTab(TermWidgetPage *termPage, bool activeTab, int index, qint64 startTime)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::endAddTab with activeTab:" << activeTab << "index:" << index;
     setNewTermPage(termPage, activeTab);
 
-    if (activeTab)
+    if (activeTab) {
+        qCDebug(mainprocess) << "Branch: active tab, setting current index";
         m_tabbar->setCurrentIndex(index);
+    }
 
+    qCDebug(mainprocess) << "Getting current terminal and saving session info";
     TermWidget *term = termPage->currentTerminal();
     m_tabbar->saveSessionIdWithTabIndex(term->getSessionId(), index);
     m_tabbar->saveSessionIdWithTabId(term->getSessionId(), termPage->identifier());
+    qCDebug(mainprocess) << "Connecting termPage signals";
     connect(termPage, &TermWidgetPage::termTitleChanged, this, &MainWindow::onTermTitleChanged);
     connect(termPage, &TermWidgetPage::lastTermClosed, this, &MainWindow::slotLastTermClosed);
 
@@ -445,48 +619,65 @@ void MainWindow::endAddTab(TermWidgetPage *termPage, bool activeTab, int index, 
     connect(termPage->currentTerminal(), &TermWidget::termIsIdle, this, &MainWindow::onTermIsIdle);
     qint64 endTime = QDateTime::currentMSecsSinceEpoch();
     QString strNewTabTime = GRAB_POINT + LOGO_TYPE + CREATE_NEW_TAB_TIME + QString::number(endTime - startTime);
-    qInfo() << qPrintable(strNewTabTime);
+    qCInfo(mainprocess)  << "Add label end.Takes Time: " << qPrintable(strNewTabTime);
+
+    QString  expandThemeStr = "";
+    expandThemeStr = Settings::instance()->extendColorScheme();
+    if (!expandThemeStr.isEmpty()) {
+        qCDebug(mainprocess) << "Branch: expand theme string not empty, emitting theme changed signal";
+        emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::instance()->themeType());
+    }
 }
 
 bool MainWindow::hasRunningProcesses()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::hasRunningProcesses";
     for (int i = 0, count = m_termStackWidget->count(); i < count; i++) {
         TermWidgetPage *tabPage = qobject_cast<TermWidgetPage *>(m_termStackWidget->widget(i));
-        if (!tabPage)
+        if(!tabPage) {
+            // qCDebug(mainprocess) << "Branch: tab page is null, continuing";
             continue;
+        }
         /******** Modify by nt001000 renfeixiang 2020-05-28:修改 判断当前tab中是否有其它分屏正在执行 bug#28910 Begin***************/
         //没有校验当前tab中是否有其它正在执行的分屏
         if (tabPage->runningTerminalCount() != 0) {
             /******** Modify by nt001000 renfeixiang 2020-05-28:修改 判断当前tab中是否有其它分屏正在执行 End***************/
-            qInfo() << "here are processes running in this terminal tab... " << tabPage->identifier();
+            qCInfo(mainprocess)  << "here are processes running in this terminal tab... " << tabPage->identifier();
             return true;
         } else {
-            qInfo() << "no processes running in this terminal tab... " << tabPage->identifier();
+            qCInfo(mainprocess)  << "no processes running in this terminal tab... " << tabPage->identifier();
         }
     }
 
+    qCDebug(mainprocess) << "No running processes found";
     return false;
 }
 
 void MainWindow::closeTab(const QString &identifier, bool hasConfirmed)
 {
-    /***add by ut001121 zhangmeng 20200508 修复BUG#24457 点击标签栏“x”按钮，右键菜单关闭工作区，关闭其它工作区，自定义命令/编码/远程管理插件未消失***/
+    qCDebug(mainprocess) << "Enter MainWindow::closeTab with identifier:" << identifier << "hasConfirmed:" << hasConfirmed;
+    /***add by ut001121 zhangmeng 20200508 修复BUG#24457 点击标签栏"x"按钮，右键菜单关闭工作区，关闭其它工作区，自定义命令/编码/远程管理插件未消失***/
     showPlugin(PLUGIN_TYPE_NONE);
 
     TermWidgetPage *tabPage = getPageByIdentifier(identifier);
-    if (nullptr == tabPage)
+    if (nullptr == tabPage) {
+        qCWarning(mainprocess) << "tabPage is nullptr";
         return;
+    }
 
     // 关闭前必须要切换过去先
-    if (m_tabbar->currentIndex() != m_tabbar->getIndexByIdentifier(identifier))
+    if (m_tabbar->currentIndex() != m_tabbar->getIndexByIdentifier(identifier)) {
+        qCDebug(mainprocess) << "Branch: switching to tab before closing";
         m_tabbar->setCurrentIndex(m_tabbar->getIndexByIdentifier(identifier));
+    }
 
     // 默认每个窗口关闭都提示一次．
     if (!hasConfirmed && tabPage->runningTerminalCount() != 0) {
+        qCDebug(mainprocess) << "Branch: showing confirmation dialog";
         showExitConfirmDialog(Utils::CloseType_Tab, tabPage->runningTerminalCount(), this);
         return;
     }
-    qInfo() << "Tab closed" << identifier;
+    qCInfo(mainprocess)  << "Close tab(" << identifier << ")";
     m_tabVisitMap.remove(identifier);
     m_tabChangeColorMap.remove(identifier);
     m_tabbar->removeTab(identifier);
@@ -497,32 +688,40 @@ void MainWindow::closeTab(const QString &identifier, bool hasConfirmed)
     updateMinHeight();
 
     if (m_tabbar->count() != 0) {
+        qCDebug(mainprocess) << "Branch: other tabs exist, updating status and focusing";
         updateTabStatus();
         focusCurrentPage();
         return;
     }
-    qInfo() << "mainwindow close";
+    qCInfo(mainprocess)  << "Main window closed!";
     close();
 }
 
 TermWidgetPage *MainWindow::getTermPage(const QString &identifier)
 {
-    return m_termWidgetPageMap.value(identifier);
+    // qCDebug(mainprocess) << "Enter MainWindow::getTermPage with identifier:" << identifier;
+    TermWidgetPage *page = m_termWidgetPageMap.value(identifier);
+    // qCDebug(mainprocess) << "Found term page:" << (page != nullptr);
+    return page;
 }
 
 void MainWindow::removeTermWidgetPage(const QString &identifier, bool isDelete)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::removeTermWidgetPage with identifier:" << identifier << "isDelete:" << isDelete;
     if (m_termWidgetPageMap.contains(identifier)) {
+        qCDebug(mainprocess) << "Branch: identifier found in map, removing";
         TermWidgetPage *termPage = m_termWidgetPageMap.value(identifier);
         m_termStackWidget->removeWidget(termPage);
         m_termWidgetPageMap.remove(identifier);
-        if (isDelete)
+        if (isDelete) {
+            qCDebug(mainprocess) << "Branch: deleting term page";
             delete termPage;
+        }
     }
 
     // 当所有tab标签页都关闭时，关闭整个MainWindow窗口
     if (m_termWidgetPageMap.isEmpty()) {
-        qInfo() << "removeTermWidgetPage mainwindow close";
+        qCWarning(mainprocess) << "No other tabs exist and the main window is closed!";
         /******** Modify by ut000438 王亮 2020-11-23:fix bug 55552:拖动标签页移动窗口过程中异常最大化 ***************/
         //当拖动标签过程中销毁窗口时，不保存销毁的窗口大小
         m_IfUseLastSize = false;
@@ -532,23 +731,31 @@ void MainWindow::removeTermWidgetPage(const QString &identifier, bool isDelete)
 
 void MainWindow::updateTabStatus()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::updateTabStatus";
     for (int i = 0; i < m_tabbar->count(); i++) {
+        // qCDebug(mainprocess) << "Processing tab at index:" << i;
         TermWidgetPage *tabPage = qobject_cast<TermWidgetPage *>(m_termStackWidget->widget(i));
         TermWidget *term = tabPage->currentTerminal();
         bool bIdle = !(term->hasRunningProcess());
         QString tabIdentifier = tabPage->identifier();
+        // qCDebug(mainprocess) << "Tab" << i << "identifier:" << tabIdentifier << "idle:" << bIdle;
 
         if (bIdle) {
+            // qCDebug(mainprocess) << "Branch: tab is idle";
             if (isTabVisited(tabIdentifier)) {
+                // qCDebug(mainprocess) << "Branch: tab was visited, resetting flags";
                 m_tabVisitMap.insert(tabIdentifier, false);
                 m_tabChangeColorMap.insert(tabIdentifier, false);
                 m_tabbar->removeNeedChangeTextColor(tabIdentifier);
             } else if (isTabChangeColor(tabIdentifier)) {
+                // qCDebug(mainprocess) << "Branch: tab needs color change";
                 m_tabbar->setChangeTextColor(tabIdentifier);
             } else {
+                // qCDebug(mainprocess) << "Branch: removing color change for tab";
                 m_tabbar->removeNeedChangeTextColor(tabIdentifier);
             }
         } else {
+            // qCDebug(mainprocess) << "Branch: tab is not idle, removing color change";
             m_tabbar->removeNeedChangeTextColor(tabIdentifier);
         }
     }
@@ -556,11 +763,15 @@ void MainWindow::updateTabStatus()
 
 QString MainWindow::getCurrTabTitle()
 {
-    return m_tabbar->tabText(m_tabbar->currentIndex());
+    // qCDebug(mainprocess) << "Enter MainWindow::getCurrTabTitle";
+    QString title = m_tabbar->tabText(m_tabbar->currentIndex());
+    // qCDebug(mainprocess) << "Current tab title:" << title;
+    return title;
 }
 
 void MainWindow::remoteUploadFile(QString strFileNames)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::remoteUploadFile with filenames:" << strFileNames;
     pressCtrlAt();
     sleep(100);
     currentPage()->sendTextToCurrentTerm(strFileNames);
@@ -569,51 +780,60 @@ void MainWindow::remoteUploadFile(QString strFileNames)
 
 bool MainWindow::isFocusOnList()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::isFocusOnList";
     bool isFocus = true;
     DIconButton *addButton = m_tabbar->findChild<DIconButton *>("AddButton");
     // 判断是否找到
     if (addButton != nullptr) {
+        qCDebug(mainprocess) << "Branch: AddButton found";
         // 判断按钮是否有焦点
         if (addButton->hasFocus()) {
+            qCDebug(mainprocess) << "Branch: AddButton has focus";
             isFocus = false;
-            qInfo() << "focus on AddButton";
+            qCInfo(mainprocess)  << "focus on AddButton";
         }
     } else {
-        qInfo() << "can not found AddButton in DIconButton";
+        qCInfo(mainprocess)  << "can not found AddButton in DIconButton";
     }
 
+    qCDebug(mainprocess) << "Checking titlebar buttons for focus";
     QList<QString> buttonList = {"DTitlebarDWindowOptionButton", "DTitlebarDWindowMinButton", "DTitlebarDWindowMaxButton", "DTitlebarDWindowCloseButton"};
     for (const QString &objectName : buttonList) {
+        // qCDebug(mainprocess) << "Checking button:" << objectName;
         DIconButton *button = titlebar()->findChild<DIconButton *>(objectName);
         // 判断是否找到
         if (button != nullptr) {
+            // qCDebug(mainprocess) << "Branch: button found" << objectName;
             // 判断按钮是否有焦点
             if (button->hasFocus()) {
                 isFocus = false;
-                qInfo() << "focus on " << objectName;
+                qCInfo(mainprocess)  << "focus on " << objectName;
             }
         } else {
-            qInfo() << "can not found objectName in DIconButton";
+            qCWarning(mainprocess) << "can not found objectName in DIconButton";
         }
     }
-    qInfo() << "focus on list : " << isFocus;
+    qCInfo(mainprocess)  << "Is focus on list? " << isFocus;
     return isFocus;
 
 }
 
 void MainWindow::closeOtherTab(const QString &identifier, bool hasConfirmed)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::closeOtherTab with identifier:" << identifier << "hasConfirmed:" << hasConfirmed;
     int runningCount = 0;
     QList<QString> closeTabIdList;
     for (int i = 0, count = m_termStackWidget->count(); i < count; i++) {
         TermWidgetPage *tabPage = qobject_cast<TermWidgetPage *>(m_termStackWidget->widget(i));
         if (tabPage && tabPage->identifier() != identifier) {
+            // qCDebug(mainprocess) << "Branch: adding tab to close list:" << tabPage->identifier();
             closeTabIdList.append(tabPage->identifier());
             runningCount += tabPage->runningTerminalCount();
         }
     }
 
     if ((!hasConfirmed) && (runningCount != 0)) {
+        qCInfo(mainprocess) << "showExitConfirmDialog";
         // 全部关闭时，仅提示一次．
         showExitConfirmDialog(Utils::CloseType_OtherTab, runningCount, this);
         return;
@@ -622,10 +842,11 @@ void MainWindow::closeOtherTab(const QString &identifier, bool hasConfirmed)
     // 关闭其它窗口，需要检测
     for (QString &id : closeTabIdList) {
         closeTab(id, true);
-        qInfo() << " close" << id;
+        qCDebug(mainprocess) << "Id(" << id << ") of the close tab? ";
     }
 
     //如果是不关闭当前页的，最后回到当前页来．
+    qCDebug(mainprocess) << "Setting current tab to identifier:" << identifier;
     m_tabbar->setCurrentIndex(m_tabbar->getIndexByIdentifier(identifier));
 
     return;
@@ -633,6 +854,7 @@ void MainWindow::closeOtherTab(const QString &identifier, bool hasConfirmed)
 
 void MainWindow::closeAllTab()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::closeAllTab";
     QList<QString> closeTabIdList;
     for (int i = 0, count = m_termStackWidget->count(); i < count; i++) {
         TermWidgetPage *tabPage = qobject_cast<TermWidgetPage *>(m_termStackWidget->widget(i));
@@ -642,7 +864,7 @@ void MainWindow::closeAllTab()
     // 全部关闭时，不再检测了，
     for (QString &id : closeTabIdList) {
         closeTab(id, true);
-        qInfo() << " close" << id;
+        qCDebug(mainprocess) << "Id(" << id << ") of the close tab? ";
     }
 
     return;
@@ -650,15 +872,17 @@ void MainWindow::closeAllTab()
 
 inline void MainWindow::slotDDialogFinished(int result)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotDDialogFinished with result:" << result;
     OnHandleCloseType(result, Utils::CloseType(qobject_cast<DDialog *>(sender())->property("type").toInt()));
     /******** Modify by ut000439 wangpeili 2020-07-27:  bug 39643  ****************/
     if (result != 1 && qobject_cast<DDialog *>(sender())->property("focusCloseBtn").toBool())        {
+        qCDebug(mainprocess) << "Branch: need to set focus on close button";
         DIconButton *closeBtn = titlebar()->findChild<DIconButton *>("DTitlebarDWindowCloseButton");
         if (closeBtn != nullptr) {
             closeBtn->setFocus();
-            qInfo() << "close button setFocus";
+            qCInfo(mainprocess)  << "Close button to get focus!";
         } else {
-            qInfo() << "can not found DTitlebarDWindowCloseButton in DTitlebar";
+            qCWarning(mainprocess) << "Can not found DTitlebarDWindowCloseButton in DTitlebar";
         }
     }
     /********************* Modify by n014361 wangpeili End ************************/
@@ -666,16 +890,21 @@ inline void MainWindow::slotDDialogFinished(int result)
 
 void MainWindow::showExitConfirmDialog(Utils::CloseType type, int count, QWidget *parent)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::showExitConfirmDialog with type:" << type << "count:" << count;
     // count < 1 不提示
-    if (count < 1)
+    if (count < 1) {
+        qCInfo(mainprocess) << "count < 1, return";
         return;
+    }
 
     QString title;
     QString txt;
     Utils::CloseType temtype = type;
     // 关闭窗口的时候，如果只有一个tab,提示的内容要为终端．
-    if (Utils::CloseType_Window == type && 1 == m_tabbar->count())
+    if (Utils::CloseType_Window == type && 1 == m_tabbar->count()) {
+        qCInfo(mainprocess) << "Utils::CloseType_Window == type && 1 == m_tabbar->count(), temtype = Utils::CloseType_Terminal";
         temtype = Utils::CloseType_Terminal;
+    }
 
     Utils::getExitDialogText(temtype, title, txt, count);
 
@@ -685,11 +914,12 @@ void MainWindow::showExitConfirmDialog(Utils::CloseType type, int count, QWidget
     DIconButton *closeBtn = titlebar()->findChild<DIconButton *>("DTitlebarDWindowCloseButton");
     if ((closeBtn != nullptr) && closeBtn->hasFocus() && (Utils::CloseType_Window == type)) {
         closeBtnHasfocus = true;
-        qInfo() << "before close window, focus widget is close button. ";
+        qCInfo(mainprocess)  << "Before close window, focus widget is close button. ";
     }
 
-    if (nullptr == closeBtn)
-        qInfo() << "can not found DTitlebarDWindowCloseButton in DTitlebar";
+    if (nullptr == closeBtn) {
+        qCInfo(mainprocess)  << "Can not found DTitlebarDWindowCloseButton in DTitlebar";
+    }
 
     /********************* Modify by n014361 wangpeili End ************************/
 
@@ -709,10 +939,12 @@ void MainWindow::showExitConfirmDialog(Utils::CloseType type, int count, QWidget
     dlg->setProperty("type", type);
 
     /******** Modify by ut000439 wangpeili 2020-07-27:  bug 39643  ****************/
-    if (closeBtnHasfocus)
+    if (closeBtnHasfocus) {
+        qCDebug(mainprocess) << "Branch: setting focusCloseBtn property to true";
         dlg->setProperty("focusCloseBtn",  true);
-    else
+    } else {
         dlg->setProperty("focusCloseBtn",  false);
+    }
 
     /********************* Modify by n014361 wangpeili End ************************/
 
@@ -724,63 +956,73 @@ void MainWindow::showExitConfirmDialog(Utils::CloseType type, int count, QWidget
 
 void MainWindow::focusPage(const QString &identifier)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::focusPage with identifier:" << identifier;
     TermWidgetPage *tabPage = getPageByIdentifier(identifier);
     if (tabPage) {
+        qCInfo(mainprocess) << "focusPage tabPage is not nullptr";
         //当切换焦点到PAGE页后，移除标签文字颜色
         m_tabbar->removeNeedChangeTextColor(identifier);
         m_termStackWidget->setCurrentWidget(tabPage);
         tabPage->focusCurrentTerm();
         return;
     }
-    qInfo() << "focusTab nullptr identifier" << identifier;
+    qCInfo(mainprocess)  << "focusTab nullptr identifier" << identifier;
 }
 
 void MainWindow::focusCurrentPage()
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::focusCurrentPage";
     focusPage(m_tabbar->identifier(m_tabbar->currentIndex()));
 }
 
 TermWidgetPage *MainWindow::currentPage()
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::currentPage";
     return qobject_cast<TermWidgetPage *>(m_termStackWidget->currentWidget());
 }
 
 TermWidgetPage *MainWindow::getPageByIdentifier(const QString &identifier)
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::getPageByIdentifier with identifier:" << identifier;
     for (int i = 0, count = m_termStackWidget->count(); i < count; i++) {
         TermWidgetPage *tabPage = qobject_cast<TermWidgetPage *>(m_termStackWidget->widget(i));
         if (tabPage && tabPage->identifier() == identifier)
             return tabPage;
     }
-    qInfo() << "getPageByIdentifier nullptr identifier" << identifier;
+    qCInfo(mainprocess)  << "getPageByIdentifier nullptr identifier" << identifier;
     return nullptr;
 }
 
 TermWidget *MainWindow::currentActivatedTerminal()
 {
-    if (currentPage())
+    // qCDebug(mainprocess) << "Enter MainWindow::currentActivatedTerminal";
+    if(currentPage())
         return currentPage()->currentTerminal();
     return nullptr;
 }
 
 void MainWindow::onTermIsIdle(QString tabIdentifier, bool bIdle)
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::onTermIsIdle with tabIdentifier:" << tabIdentifier << "bIdle:" << bIdle;
     //如果标签被点过，移除标签颜色
     if (isTabVisited(tabIdentifier) && bIdle) {
         m_tabVisitMap.insert(tabIdentifier, false);
         m_tabChangeColorMap.insert(tabIdentifier, false);
         m_tabbar->removeNeedChangeTextColor(tabIdentifier);
+        // qCInfo(mainprocess) << "onTermIsIdle isTabVisited(tabIdentifier) && bIdle, removeNeedChangeTextColor";
         return;
     }
 
     if (bIdle) {
+        // qCInfo(mainprocess) << "onTermIsIdle bIdle";
         //空闲状态如果标签被标记变色，则改变标签颜色
         if (m_tabbar->isNeedChangeTextColor(tabIdentifier)) {
             m_tabChangeColorMap.insert(tabIdentifier, true);
             m_tabbar->setChangeTextColor(tabIdentifier);
+            // qCInfo(mainprocess) << "onTermIsIdle bIdle, setChangeTextColor";
         }
     } else {
-
+        // qCInfo(mainprocess) << "onTermIsIdle else";
         //如果当前标签是活动标签，移除变色请求
         int activeTabIndex = m_tabbar->currentIndex();
         QString activeTabIdentifier = m_tabbar->tabData(activeTabIndex).toString();
@@ -788,6 +1030,7 @@ void MainWindow::onTermIsIdle(QString tabIdentifier, bool bIdle)
             m_tabVisitMap.insert(activeTabIdentifier, false);
             m_tabChangeColorMap.insert(activeTabIdentifier, false);
             m_tabbar->removeNeedChangeTextColor(activeTabIdentifier);
+            // qCInfo(mainprocess) << "onTermIsIdle activeTabIdentifier == tabIdentifier, removeNeedChangeTextColor";
             return;
         }
 
@@ -801,15 +1044,20 @@ void MainWindow::onTermIsIdle(QString tabIdentifier, bool bIdle)
 
 void MainWindow::resizeEvent(QResizeEvent *event)
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::resizeEvent";
     //Add by ut001000 renfeixiang 2020-11-16 雷神动画效果时，不进行resize操作，直接return
-    if (!isNotAnimation)
+    if (!isNotAnimation) {
+        qCInfo(mainprocess) << "resizeEvent isNotAnimation, return";
         return;
+    }
 
     // 保存窗口位置
-    if (nullptr == resizeFinishedTimer) {
+    if(nullptr == resizeFinishedTimer) {
+        // qCInfo(mainprocess) << "resizeEvent resizeFinishedTimer is nullptr";
         resizeFinishedTimer = new QTimer(this);
         resizeFinishedTimer->setSingleShot(true);
-        connect(resizeFinishedTimer, &QTimer::timeout, this, [this]() {
+        connect(resizeFinishedTimer, &QTimer::timeout, this, [this](){
+            // qCInfo(mainprocess) << "resizeEvent resizeFinishedTimer timeout";
             saveWindowSize();
         });
     }
@@ -823,6 +1071,7 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::closeEvent";
     saveWindowSize();
 
     //fix bug: 64134 新建两个窗口，打开A窗口关于后关闭应用，B窗口打开关于，应用出现闪退
@@ -830,6 +1079,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
     DAboutDialog *aboutDialog = app->aboutDialog();
 
     if (aboutDialog != nullptr) {
+        qCInfo(mainprocess) << "aboutDialog is not nullptr";
         disconnect(aboutDialog, &DAboutDialog::aboutToClose, nullptr, nullptr);
 
         //目前的关于对话框是非模态的,这里的处理是防止关于对话框可以打开多个的情况
@@ -842,8 +1092,10 @@ void MainWindow::closeEvent(QCloseEvent *event)
     //fix bug: 64134 end
 
     // 注销和关机时不需要确认了
-    if (qApp->isSavingSession())
+    if (qApp->isSavingSession()) {
+        qCInfo(mainprocess) << "qApp->isSavingSession(), return";
         DMainWindow::closeEvent(event);
+    }
 
     // 一页一页退出，当全部退出以后，mainwindow自然关闭．
     event->ignore();
@@ -859,8 +1111,8 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
     if ((!m_hasConfirmedClose) && (runningCount != 0)) {
         // 如果不能马上关闭，并且还在没有最小化．
+        qCInfo(mainprocess)  << "Minimal mode or not?" << isMinimized();
         if ((runningCount != 0)  && isMinimized()) {
-            qInfo() << "isMinimized........... ";
             setWindowState((windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
         }
 
@@ -872,6 +1124,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 
     if (0 == m_tabbar->count()) {
+        qCInfo(mainprocess) << "0 == m_tabbar->count(), DMainWindow::closeEvent";
         DMainWindow::closeEvent(event);
         emit mainwindowClosed(this);
     }
@@ -879,25 +1132,31 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 bool MainWindow::isQuakeMode()
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::isQuakeMode";
     return  m_isQuakeWindow;
 }
 
 void MainWindow::setIsQuakeWindowTab(bool isQuakeWindowTab)
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::setIsQuakeWindowTab with isQuakeWindowTab:" << isQuakeWindowTab;
     m_tabbar->setIsQuakeWindowTab(isQuakeWindowTab);
 }
 
 void MainWindow::onTermTitleChanged(QString title)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::onTermTitleChanged with title:" << title;
     TermWidgetPage *tabPage = qobject_cast<TermWidgetPage *>(sender());
     const bool customName = tabPage->property("TAB_CUSTOM_NAME_PROPERTY").toBool();
-    if (!customName)
+    if (!customName) {
+        qCInfo(mainprocess) << "customName is false, setTabText";
         m_tabbar->setTabText(tabPage->identifier(), title);
+    }
     updateWindowTitle();
 
     // 判定第一次修改标题的时候，认为终端已经创建成功
     // 以此认为第一次打开终端窗口结束，记录时间
     if (!hasCreateFirstTermialComplete) {
+        qCInfo(mainprocess) << "hasCreateFirstTermialComplete is false, setMainTerminalIsStarted";
         Service::instance()->setMainTerminalIsStarted(true);
         firstTerminalComplete();
         hasCreateFirstTermialComplete = true;
@@ -906,13 +1165,14 @@ void MainWindow::onTermTitleChanged(QString title)
 
 QString MainWindow::getConfigWindowState()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::getConfigWindowState";
     QString windowState =
         Settings::instance()->settings->option("advanced.window.use_on_starting")->value().toString();
 
     // 启动参数配置的状态值优先于 内部配置的状态值
     if (m_properties.contains(StartWindowState)) {
         QString state = m_properties[StartWindowState].toString();
-        qInfo() << "use line state set:" << state;
+        qCInfo(mainprocess)  << "State(" << state << ") of the start window.";
         if ("maximum" == state)
             windowState = "window_maximum";
         else if (state == "splitscreen")
@@ -922,13 +1182,14 @@ QString MainWindow::getConfigWindowState()
         else if (state == "fullscreen")
             windowState = state;
         else
-            qInfo() << "error line state set:" << state << "ignore it!";
+            qCWarning(mainprocess) << "Error line state set:" << state << "ignore it!";
     }
     return  windowState;
 }
 
 QSize MainWindow::halfScreenSize()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::halfScreenSize";
     QScreen *screen = QGuiApplication::screenAt(QCursor::pos());
     if (!screen) {
         qCritical() << "Can't get the screen where the cursor is located!";
@@ -949,6 +1210,7 @@ QSize MainWindow::halfScreenSize()
 
 QString MainWindow::getWinInfoConfigPath()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::getWinInfoConfigPath";
     QDir winInfoPath(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation));
     if (!winInfoPath.exists())
         winInfoPath.mkpath(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation));
@@ -959,6 +1221,7 @@ QString MainWindow::getWinInfoConfigPath()
 
 void MainWindow::initShortcuts()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::initShortcuts";
     ShortcutManager::instance()->initConnect(this);
     connect(ShortcutManager::instance(), &ShortcutManager::addCustomCommandSignal, this, &MainWindow::addCustomCommandSlot);
     connect(ShortcutManager::instance(), &ShortcutManager::removeCustomCommandSignal, this, &MainWindow::removeCustomCommandSlot);
@@ -1064,35 +1327,39 @@ void MainWindow::initShortcuts()
 
 inline void MainWindow::slotShortcutSwitchActivated()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutSwitchActivated";
     QShortcut *switchShortcut = qobject_cast<QShortcut *>(sender());
     int i = switchShortcut->property("index").toInt();
     TermWidgetPage *page = currentPage();
     if (page) {
+        qCInfo(mainprocess) << "page is not nullptr";
         assert(m_tabbar);
         if ((9 == i) && (m_tabbar->count() > 9)) {
+            qCInfo(mainprocess) << "9 == i) && (m_tabbar->count() > 9), setCurrentIndex";
             m_tabbar->setCurrentIndex(m_tabbar->count() - 1);
             return;
         }
 
         if (i - 1 >= m_tabbar->count()) {
-            qInfo() << "i - 1 > tabcount" << i - 1 << m_tabbar->count();
+            qCWarning(mainprocess) <<"The index(" << i -1 << ") of the current tab exceeds the total number of the current windows tabs(" << m_tabbar->count() << ")";
             return;
         }
 
-        qInfo() << "index" << i - 1;
         m_tabbar->setCurrentIndex(i - 1);
         return;
     }
-    qInfo() << "currentPage nullptr ??";
+    qCWarning(mainprocess) << "Current Page is Nullptr!";
 }
 
 inline void MainWindow::slotShortcutNewTab()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutNewTab";
     this->addTab(currentPage()->createCurrentTerminalProperties(), true);
 }
 
 inline void MainWindow::slotShortcutCloseTab()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutCloseTab";
     TermWidgetPage *page = currentPage();
     if (page)
         closeTab(page->identifier());
@@ -1100,6 +1367,7 @@ inline void MainWindow::slotShortcutCloseTab()
 
 inline void MainWindow::slotShortcutCloseOtherTabs()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutCloseOtherTabs";
     TermWidgetPage *page = currentPage();
     if (page)
         closeOtherTab(page->identifier());
@@ -1107,6 +1375,7 @@ inline void MainWindow::slotShortcutCloseOtherTabs()
 
 inline void MainWindow::slotShortcutPreviousTab()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutPreviousTab";
     TermWidgetPage *page = currentPage();
     if (page) {
         int index = m_tabbar->currentIndex();
@@ -1120,6 +1389,7 @@ inline void MainWindow::slotShortcutPreviousTab()
 
 inline void MainWindow::slotShortcutNextTab()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutNextTab";
     TermWidgetPage *page = currentPage();
     if (page) {
         int index = m_tabbar->currentIndex();
@@ -1133,6 +1403,7 @@ inline void MainWindow::slotShortcutNextTab()
 
 inline void MainWindow::slotShortcutHorizonzalSplit()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutHorizonzalSplit";
     // 判读数量是否允许分屏
     if (Service::instance()->isCountEnable()) {
         TermWidgetPage *page = currentPage();
@@ -1141,11 +1412,12 @@ inline void MainWindow::slotShortcutHorizonzalSplit()
             return ;
         }
     }
-    qInfo() << "can't split vertical  again";
+    qCInfo(mainprocess)  << "Can't split horizonzal again";
 }
 
 inline void MainWindow::slotShortcutVerticalSplit()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutVerticalSplit";
     // 判读数量是否允许分屏
     if (Service::instance()->isCountEnable()) {
         TermWidgetPage *page = currentPage();
@@ -1154,12 +1426,12 @@ inline void MainWindow::slotShortcutVerticalSplit()
             return ;
         }
     }
-    qInfo() << "can't split vertical  again";
+    qCInfo(mainprocess)  << "Can't split vertical again";
 }
 
 inline void MainWindow::slotShortcutSelectUpperWorkspace()
 {
-    qInfo() << "Alt+k";
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutSelectUpperWorkspace";
     TermWidgetPage *page = currentPage();
     if (page)
         page->focusNavigation(Qt::TopEdge);
@@ -1167,6 +1439,7 @@ inline void MainWindow::slotShortcutSelectUpperWorkspace()
 
 inline void MainWindow::slotShortcutSelectLowerWorkspace()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutSelectLowerWorkspace";
     TermWidgetPage *page = currentPage();
     if (page)
         page->focusNavigation(Qt::BottomEdge);
@@ -1174,6 +1447,7 @@ inline void MainWindow::slotShortcutSelectLowerWorkspace()
 
 inline void MainWindow::slotShortcutSelectLeftWorkspace()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutSelectLeftWorkspace";
     TermWidgetPage *page = currentPage();
     if (page)
         page->focusNavigation(Qt::LeftEdge);
@@ -1181,6 +1455,7 @@ inline void MainWindow::slotShortcutSelectLeftWorkspace()
 
 inline void MainWindow::slotShortcutSelectRightWorkspace()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutSelectRightWorkspace";
     TermWidgetPage *page = currentPage();
     if (page)
         page->focusNavigation(Qt::RightEdge);
@@ -1188,15 +1463,17 @@ inline void MainWindow::slotShortcutSelectRightWorkspace()
 
 inline void MainWindow::slotShortcutCloseWorkspace()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutCloseWorkspace";
     TermWidgetPage *page = currentPage();
     if (page) {
-        qInfo() << "CloseWorkspace";
+        qCInfo(mainprocess)  << "Close Works pace";
         page->closeSplit(page->currentTerminal());
     }
 }
 
 inline void MainWindow::slotShortcutCloseOtherWorkspaces()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutCloseOtherWorkspaces";
     TermWidgetPage *page = currentPage();
     if (page)
         page->closeOtherTerminal();
@@ -1204,6 +1481,7 @@ inline void MainWindow::slotShortcutCloseOtherWorkspaces()
 
 inline void MainWindow::slotShortcutCopy()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutCopy";
     TermWidgetPage *page = currentPage();
     if (page)
         page->copyClipboard();
@@ -1211,6 +1489,7 @@ inline void MainWindow::slotShortcutCopy()
 
 inline void MainWindow::slotShortcutPaste()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutCopy";
     TermWidgetPage *page = currentPage();
     if (page)
         page->pasteClipboard();
@@ -1218,11 +1497,13 @@ inline void MainWindow::slotShortcutPaste()
 
 inline void MainWindow::slotShortcutFind()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutFind";
     showPlugin(PLUGIN_TYPE_SEARCHBAR);
 }
 
 inline void MainWindow::slotShortcutZoomIn()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutZoomIn";
     TermWidgetPage *page = currentPage();
     if (page)
         page->zoomInCurrentTierminal();
@@ -1236,6 +1517,7 @@ inline void MainWindow::slotShortcutZoomIn()
 
 inline void MainWindow::slotShortcutZoomOut()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutZoomOut";
     TermWidgetPage *page = currentPage();
     if (page)
         page->zoomOutCurrentTerminal();
@@ -1249,6 +1531,7 @@ inline void MainWindow::slotShortcutZoomOut()
 
 inline void MainWindow::slotShortcutDefaultSize()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutDefaultSize";
     TermWidgetPage *page = currentPage();
     if (page)
         page->setFontSize(Settings::instance()->fontSize());
@@ -1262,20 +1545,23 @@ inline void MainWindow::slotShortcutDefaultSize()
 
 inline void MainWindow::slotShortcutSelectAll()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutSelectAll";
     TermWidgetPage *page = currentPage();
     if (page) {
-        qInfo() << "selectAll";
+        qCInfo(mainprocess)  << "Select all pages using the shortcut keys";
         page->selectAll();
     }
 }
 
 inline void MainWindow::slotShortcutSwitchFullScreen()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutSwitchFullScreen";
     switchFullscreen();
 }
 
 inline void MainWindow::slotShortcutRenameTitle()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutRenameTitle";
     showPlugin(PLUGIN_TYPE_NONE);
     TermWidgetPage *page = currentPage();
     if (page)
@@ -1284,11 +1570,13 @@ inline void MainWindow::slotShortcutRenameTitle()
 
 inline void MainWindow::slotShortcutDisplayShortcuts()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutDisplayShortcuts";
     displayShortcuts();
 }
 
 inline void MainWindow::slotShortcutCustomCommand()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutCustomCommand";
     if (PLUGIN_TYPE_CUSTOMCOMMAND == m_CurrentShowPlugin)
         showPlugin(PLUGIN_TYPE_NONE);
     else
@@ -1297,6 +1585,7 @@ inline void MainWindow::slotShortcutCustomCommand()
 
 inline void MainWindow::slotShortcutRemoteManage()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotShortcutRemoteManage";
     if (PLUGIN_TYPE_REMOTEMANAGEMENT == m_CurrentShowPlugin)
         showPlugin(PLUGIN_TYPE_NONE);
     else
@@ -1305,17 +1594,17 @@ inline void MainWindow::slotShortcutRemoteManage()
 
 inline void MainWindow::slotShortcutFocusOut()
 {
-    qInfo() << "focusout timinal is activated!" << QKEYSEQUENCE_FOCUSOUT_TIMINAL;
+    qCInfo(mainprocess)  << "focusout timinal is activated!" << QKEYSEQUENCE_FOCUSOUT_TIMINAL;
     DIconButton *addButton = m_tabbar->findChild<DIconButton *>("AddButton");
     if (addButton != nullptr)
         addButton->setFocus();
     else
-        qInfo() << "can not found AddButton in DIconButton";
+        qCInfo(mainprocess)  << "can not found AddButton in DIconButton";
 }
 
 inline void MainWindow::slotShortcutBuiltinPaste()
 {
-    qInfo() << "built in paste shortcut is activated!" << QKEYSEQUENCE_PASTE_BUILTIN;
+    qCInfo(mainprocess)  << "built in paste shortcut is activated!" << QKEYSEQUENCE_PASTE_BUILTIN;
     TermWidgetPage *page = currentPage();
     if (page)
         page->pasteClipboard();
@@ -1323,7 +1612,7 @@ inline void MainWindow::slotShortcutBuiltinPaste()
 
 inline void MainWindow::slotShortcutBuiltinCopy()
 {
-    qInfo() << "built in copy shortcut is activated!" << QKEYSEQUENCE_COPY_BUILTIN;
+    qCInfo(mainprocess)  << "built in copy shortcut is activated!" << QKEYSEQUENCE_COPY_BUILTIN;
     TermWidgetPage *page = currentPage();
     if (page)
         page->copyClipboard();
@@ -1331,6 +1620,7 @@ inline void MainWindow::slotShortcutBuiltinCopy()
 
 void MainWindow::initConnections()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::initConnections";
     connect(this, &MainWindow::mainwindowClosed, WindowsManager::instance(), &WindowsManager::onMainwindowClosed);
     connect(Settings::instance(), &Settings::terminalSettingChanged, this, &MainWindow::onTerminalSettingChanged);
     connect(Settings::instance(), &Settings::windowSettingChanged, this, &MainWindow::onWindowSettingChanged);
@@ -1341,6 +1631,7 @@ void MainWindow::initConnections()
 
 void MainWindow::showPlugin(const QString &name)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::showPlugin";
     bool bSetFocus = false;
     // 当焦点不在终端时，调用插件，并直接进入焦点
     if (qApp->focusWidget() != nullptr) {
@@ -1353,40 +1644,43 @@ void MainWindow::showPlugin(const QString &name)
 
     if ((name == m_CurrentShowPlugin) && (PLUGIN_TYPE_NONE == m_CurrentShowPlugin)) {
         // 目前没有列表显示，直接返回
-        qInfo() << "no plugin show!";
+        //qCInfo(mainprocess)  << "no plugin show!";
         return;
     }
 
     m_CurrentShowPlugin = name;
     if (name != PLUGIN_TYPE_NONE)
-        qInfo() << "show Plugin" << name << bSetFocus;
+        qCInfo(mainprocess)  << "show Plugin" << name << bSetFocus;
 
     emit showPluginChanged(name, bSetFocus);
 }
 
 void MainWindow::hidePlugin()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::hidePlugin";
     if (PLUGIN_TYPE_NONE == m_CurrentShowPlugin)
         return;
 
-    qInfo() << "hide Plugin" << m_CurrentShowPlugin;
+    qCInfo(mainprocess)  << "hide Plugin" << m_CurrentShowPlugin;
     m_CurrentShowPlugin = PLUGIN_TYPE_NONE;
     emit quakeHidePlugin();
 }
 
 QString MainWindow::selectedText()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::selectedText";
     TermWidgetPage *page = currentPage();
     if (page) {
         if (page->currentTerminal())
             return page->currentTerminal()->selectedText();
     }
-    qInfo() << "not point terminal??";
+    qCInfo(mainprocess)  << "not point terminal??";
     return  "";
 }
 
 void MainWindow::onCreateNewWindow(QString workingDir)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::onCreateNewWindow";
     Q_UNUSED(workingDir);
     // 调用一个新的进程，开启终端
     QProcess process;
@@ -1395,6 +1689,7 @@ void MainWindow::onCreateNewWindow(QString workingDir)
 
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::eventFilter";
     if (QEvent::KeyPress == event->type() && currentActivatedTerminal()) {
         // 当前的终端进行操作
         TermWidget *term = currentActivatedTerminal();
@@ -1441,6 +1736,32 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
             if (term->isActiveWindow() && term->flowControlEnabled())
                 term->showFlowMessage(false);
         }
+
+        // Ctrl+Shift+Up/Down 调整透明度
+        if ((keyEvent->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier)) && 
+            Settings::instance()->OpacityCtrlAltScrollWheel() &&
+            (keyEvent->key() == Qt::Key_Up || keyEvent->key() == Qt::Key_Down)) {
+            
+            int current = Settings::instance()->settings->option("basic.interface.opacity")->value().toInt();
+            int step = 5; // 每次调整5%
+            int newOpacity;
+            
+            if (keyEvent->key() == Qt::Key_Up) {
+                newOpacity = current + step; // Up键增加透明度（更不透明）
+            } else {
+                newOpacity = current - step; // Down键减少透明度（更透明）
+            }
+            
+            // 与设置界面滑块保持一致（范围 20-100）
+            newOpacity = qBound(20, newOpacity, 100);
+            qInfo() << Q_FUNC_INFO << "Ctrl+Shift+" << (keyEvent->key() == Qt::Key_Up ? "Up" : "Down") 
+                    << "opacity change from" << current << "to" << newOpacity;
+            
+            // 只修改设置值，让 Settings::terminalSettingChanged 信号触发更新
+            Settings::instance()->settings->option("basic.interface.opacity")->setValue(newOpacity);
+            
+            return true; // 事件已处理
+        }
     }
 
     //if (watched == this) {
@@ -1478,7 +1799,7 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
             } while (false);
 
             if (!filterReason.isEmpty()) {
-                qInfo() << "Esc is not effect, reason:" << filterReason;
+                qCInfo(mainprocess)  << "Esc is not effect, reason:" << filterReason;
             } else {
                 focusCurrentPage();
                 showPlugin(PLUGIN_TYPE_NONE);
@@ -1509,17 +1830,17 @@ void MainWindow::onWindowSettingChanged(const QString &keyName)
             m_winInfoConfig->setValue(CONFIG_WINDOW_WIDTH, WINDOW_DEFAULT_WIDTH);
             m_winInfoConfig->setValue(CONFIG_WINDOW_HEIGHT, WINDOW_DEFAULT_HEIGHT);
             /******** Modify by nt001000 renfeixiang 2020-05-25: 文件wininfo-config.conf中参数,使用定义更换window_width，window_height End***************/
-            qInfo() << "change value change value change value";
+            qCInfo(mainprocess)  << "change value change value change value";
         } else {
             m_IfUseLastSize = false;
         }
-        qInfo() << "settingValue[" << keyName << "] changed to " << state
+        qCInfo(mainprocess)  << "settingValue[" << keyName << "] changed to " << state
                 << ", auto effective when next start!";
         return;
     }
     // auto_hide_raytheon_window在使用中自动读取生效
     if ((QStringLiteral("advanced.window.auto_hide_raytheon_window") == keyName) || (QStringLiteral("advanced.window.use_on_starting") == keyName)) {
-        qInfo() << "settingValue[" << keyName << "] changed to " << Settings::instance()->OutputtingScroll()
+        qCInfo(mainprocess)  << "settingValue[" << keyName << "] changed to " << Settings::instance()->OutputtingScroll()
                 << ", auto effective when happen";
         /***mod begin by ut001121 zhangmeng 20200528 修复BUG28920***/
         onAppFocusChangeForQuake();
@@ -1527,12 +1848,13 @@ void MainWindow::onWindowSettingChanged(const QString &keyName)
         return;
     }
 
-    qInfo() << "settingValue[" << keyName << "] changed is not effective";
+    qCInfo(mainprocess)  << "settingValue[" << keyName << "] changed is not effective";
 }
 
 void MainWindow::onShortcutSettingChanged(const QString &keyName)
 {
-    qInfo() << "Shortcut[" << keyName << "] changed";
+    qCDebug(mainprocess) << "Enter MainWindow::onShortcutSettingChanged";
+    qCInfo(mainprocess)  << "Shortcut[" << keyName << "] changed";
     if (m_builtInShortcut.contains(keyName)) {
         QString value = Settings::instance()->settings->option(keyName)->value().toString();
         //m_builtInShortcut[keyName]->setKey(QKeySequence(value));
@@ -1541,13 +1863,14 @@ void MainWindow::onShortcutSettingChanged(const QString &keyName)
         return;
     }
 
-    qInfo() << "Shortcut[" << keyName << "] changed is unknown!";
+    qCInfo(mainprocess)  << "Shortcut[" << keyName << "] changed is unknown!";
 }
 
 void MainWindow::setNewTermPage(TermWidgetPage *termPage, bool activePage)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::setNewTermPage";
     if (nullptr == termPage) {
-        qInfo() << "termPage is nullptr!";
+        qCInfo(mainprocess)  << "termPage is nullptr!";
         return;
     }
 
@@ -1560,11 +1883,13 @@ void MainWindow::setNewTermPage(TermWidgetPage *termPage, bool activePage)
 
 void MainWindow::createNewTab()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::createNewTab";
     addTab(currentPage()->createCurrentTerminalProperties(), true);
 }
 
 void MainWindow::displayShortcuts()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::displayShortcuts";
     QPoint pos = calculateShortcutsPreviewPoint();
 
     QJsonArray jsonGroups;
@@ -1588,8 +1913,7 @@ void MainWindow::displayShortcuts()
 
 void MainWindow::createJsonGroup(const QString &keyCategory, QJsonArray &jsonGroups)
 {
-    qInfo() << keyCategory;
-
+    qCDebug(mainprocess) << "Enter MainWindow::createJsonGroup";
     QString strGroupName = "";
     if ("tab" == keyCategory)
         strGroupName =  QObject::tr("Tabs");
@@ -1684,6 +2008,7 @@ void MainWindow::createJsonGroup(const QString &keyCategory, QJsonArray &jsonGro
 
 QShortcut *MainWindow::createNewShotcut(const QString &key, bool AutoRepeat)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::createNewShotcut";
     QString value = Settings::instance()->settings->option(key)->value().toString();
     //bug#89372，"显示快捷键"选项，在设置界面隐藏，仅默认值生效
     if ("shortcuts.advanced.display_shortcuts" == key)
@@ -1698,6 +2023,7 @@ QShortcut *MainWindow::createNewShotcut(const QString &key, bool AutoRepeat)
 
 void MainWindow::remoteUploadFile()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::remoteUploadFile";
     //下载弹窗加载
     QString curPath = QDir::currentPath();
     QString dlgTitle = QObject::tr("Select file to upload");
@@ -1713,6 +2039,7 @@ void MainWindow::remoteUploadFile()
 
 inline void MainWindow::onUploadFileDialogFinished(int code)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::onUploadFileDialogFinished";
     DFileDialog *dialog = qobject_cast<DFileDialog *>(sender());
     if (nullptr == dialog)
         return;
@@ -1733,12 +2060,13 @@ inline void MainWindow::onUploadFileDialogFinished(int code)
         }
         remoteUploadFile(strTxt);
     } else {
-        qInfo() << "remoteUploadFile file name is Null";
+        qCWarning(mainprocess) << "remoteUploadFile file name is Null";
     }
 }
 
 void MainWindow::slotDialogSelectFinished(int code)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotDialogSelectFinished";
     DFileDialog *dialog = qobject_cast<DFileDialog *>(sender());
     if (QDialog::Accepted == code  && !dialog->selectedFiles().isEmpty()) {
         QStringList list = dialog->selectedFiles();
@@ -1769,6 +2097,7 @@ void MainWindow::slotDialogSelectFinished(int code)
 
 void MainWindow::remoteDownloadFile()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::remoteDownloadFile";
     QString curPath = QDir::currentPath();
     QString dlgTitle = QObject::tr("Select a directory to save the file");
 
@@ -1783,12 +2112,14 @@ void MainWindow::remoteDownloadFile()
 
 void MainWindow::onApplicationStateChanged(Qt::ApplicationState state)
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::onApplicationStateChanged";
     Q_UNUSED(state)
     return;
 }
 
 inline void MainWindow::slotCustomCommandActionTriggered()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::slotCustomCommandActionTriggered";
     QAction *action = qobject_cast<QAction *>(sender());
     if (!this->isActiveWindow())
         return;
@@ -1802,6 +2133,7 @@ inline void MainWindow::slotCustomCommandActionTriggered()
 
 void MainWindow::addCustomCommandSlot(QAction *newAction)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::addCustomCommandSlot";
     QAction *action = newAction;
     // 注册自定义快捷键,使用小写 up2down dzw 20201215
     action->setShortcut(Utils::converUpToDown(action->shortcut()));
@@ -1813,21 +2145,23 @@ void MainWindow::addCustomCommandSlot(QAction *newAction)
 
 void MainWindow::removeCustomCommandSlot(QAction *newAction)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::removeCustomCommandSlot";
     removeAction(newAction);
 }
 
 void MainWindow::OnHandleCloseType(int result, Utils::CloseType type)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::OnHandleCloseType";
     // 弹窗隐藏或消失
     Service::instance()->setIsDialogShow(this, false);
     if (result != 1) {
-        qInfo() << "user cancle close";
+        qCInfo(mainprocess)  << "user cancle close";
         return;
     }
 
     TermWidgetPage *page = currentPage();
     if (nullptr == page) {
-        qInfo() << "null pointer of currentPage ???";
+        qCWarning(mainprocess) << "null pointer of currentPage ???";
         return;
     }
 
@@ -1856,11 +2190,13 @@ void MainWindow::OnHandleCloseType(int result, Utils::CloseType type)
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::keyPressEvent";
     Q_UNUSED(event);
 }
 
 void MainWindow::executeDownloadFile()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::executeDownloadFile";
     //--modified by qinyaning(nyq) to slove Unable to download file from server, time: 2020.4.13 18:21--//
     // 前一条命令执行
     currentPage()->sendTextToCurrentTerm("\r\n");
@@ -1883,6 +2219,7 @@ void MainWindow::executeDownloadFile()
 
 void MainWindow::pressCtrlAt()
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::pressCtrlAt";
     QKeyEvent keyPress(QEvent::KeyPress, Qt::Key_At, Qt::ControlModifier);
     if (focusWidget())
         QApplication::sendEvent(focusWidget(), &keyPress);
@@ -1890,6 +2227,7 @@ void MainWindow::pressCtrlAt()
 
 void MainWindow::pressCtrlU()
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::pressCtrlU";
     QKeyEvent keyPress(QEvent::KeyPress, Qt::Key_U, Qt::ControlModifier);
     if (focusWidget())
         QApplication::sendEvent(focusWidget(), &keyPress);
@@ -1897,6 +2235,7 @@ void MainWindow::pressCtrlU()
 
 void MainWindow::sleep(int msec)
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::sleep";
     QTime dieTime = QTime::currentTime().addMSecs(msec);
     while (QTime::currentTime() < dieTime) {
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
@@ -1907,6 +2246,7 @@ void MainWindow::sleep(int msec)
 
 void MainWindow::pressEnterKey(const QString &text)
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::pressEnterKey";
     QKeyEvent event(QEvent::KeyPress, 0, Qt::NoModifier, text);
     if (focusWidget())
         QApplication::sendEvent(focusWidget(), &event);  // expose as a big fat keypress event
@@ -1914,20 +2254,22 @@ void MainWindow::pressEnterKey(const QString &text)
 
 void MainWindow::createWindowComplete()
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::createWindowComplete";
     m_WindowCompleteTime = QDateTime::currentDateTime().toMSecsSinceEpoch();
 }
 
 void MainWindow::firstTerminalComplete()
 {
     m_FirstTerminalCompleteTime = QDateTime::currentDateTime().toMSecsSinceEpoch();
-    qInfo() << "app create all complete," << "MainWindowID = " << m_MainWindowID << ",all time use" << m_FirstTerminalCompleteTime - m_ReferedAppStartTime << "ms";
-    qInfo() << "before entry use" << m_CreateWindowTime - m_ReferedAppStartTime << "ms";
+    qCInfo(mainprocess)  << "app create all complete," << "MainWindowID = " << m_MainWindowID << ",all time use" << m_FirstTerminalCompleteTime - m_ReferedAppStartTime << "ms";
+    qCInfo(mainprocess)  << "before entry use" << m_CreateWindowTime - m_ReferedAppStartTime << "ms";
     // 创建mainwidow时间，这个时候terminal并没有创建好，不能代表什么。
-    qInfo() << "cretae first Terminal use" << m_FirstTerminalCompleteTime - m_CreateWindowTime << "ms";
+    qCInfo(mainprocess)  << "cretae first Terminal use" << m_FirstTerminalCompleteTime - m_CreateWindowTime << "ms";
 }
 
 QObjectList MainWindow::getNamedChildren(QObject *obj)
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::getNamedChildren";
     QObjectList list;
     if (nullptr == obj)
         return list;
@@ -1943,7 +2285,8 @@ QObjectList MainWindow::getNamedChildren(QObject *obj)
 
 void MainWindow::setTitlebarNoFocus(QWidget *titlebar)
 {
-    foreach (QObject *obj, getNamedChildren(titlebar)) {
+    // qCDebug(mainprocess) << "Enter MainWindow::setTitlebarNoFocus";
+    foreach(QObject *obj, getNamedChildren(titlebar)) {
         QWidget *w = qobject_cast<QWidget *>(obj);
         if (w)
             w->setFocusPolicy(Qt::NoFocus);
@@ -1952,38 +2295,49 @@ void MainWindow::setTitlebarNoFocus(QWidget *titlebar)
 
 qint64 MainWindow::createNewMainWindowTime()
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::createNewMainWindowTime";
     // 当前时间减去创建时间
     return (QDateTime::currentDateTime().toMSecsSinceEpoch() - m_ReferedAppStartTime);
 }
 
 int MainWindow::getDesktopIndex() const
 {
+    // qCDebug(mainprocess) << "Enter MainWindow::getDesktopIndex";
     return m_desktopIndex;
 }
 
 void MainWindow::checkExtendThemeItem(const QString &expandThemeStr, QAction *&action)
 {
-
-    if (Settings::instance()->m_configCustomThemePath == expandThemeStr) {
-        // 判断是否是自定义
+    qCDebug(mainprocess) << "Enter MainWindow::checkExtendThemeItem";
+    if (THEME_ONE == expandThemeStr)
+        action = themeOneAction;
+    else if (THEME_TWO == expandThemeStr)
+        action = themeTwoAction;
+    else if (THEME_THREE == expandThemeStr)
+        action = themeThreeAction;
+    else if (THEME_FOUR == expandThemeStr)
+        action = themeFourAction;
+    else if (THEME_FIVE == expandThemeStr)
+        action = themeFiveAction;
+    else if (THEME_SIX == expandThemeStr)
+        action = themeSixAction;
+    else if (THEME_SEVEN == expandThemeStr)
+        action = themeSevenAction;
+    else if (THEME_EIGHT == expandThemeStr)
+        action = themeEightAction;
+    else if (THEME_NINE == expandThemeStr)
+        action = themeNineAction;
+    else if (THEME_TEN == expandThemeStr)
+        action = themeTenAction;
+    else if (Settings::instance()->m_configCustomThemePath == expandThemeStr)
         action = themeCustomAction;
-    }
-    if (themeBuiltinActionMap.contains(expandThemeStr)) {
-        // 判断是否是内置项
+    else if (themeBuiltinActionMap.contains(expandThemeStr))
         action = themeBuiltinActionMap[expandThemeStr];
-    }
-    if (expandThemeStr == THEME_SYSTEN) {
-        action = autoThemeAction;
-    }
-
-    // 默认深色主题
-    if (expandThemeStr.isEmpty()) {
-        action = darkThemeAction;
-    }
 }
 
 void MainWindow::checkThemeItem()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::checkThemeItem";
     bool disableDtkSwitchThemeMenu = qEnvironmentVariableIsSet("KLU_DISABLE_MENU_THEME");
     //disableDtkSwitchThemeMenu = true; //主题显示开关控制
     //观察dtk中klu不支持主题功能。不显示主题相关部分。
@@ -2019,6 +2373,7 @@ void MainWindow::checkThemeItem()
 
 void MainWindow::addThemeMenuItems()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::addThemeMenuItems";
     QMenu *menu = m_menu;
     QAction *themeSeparator = nullptr;
 
@@ -2035,25 +2390,82 @@ void MainWindow::addThemeMenuItems()
         switchThemeMenu->addSeparator();
 
         //添加内置主题项列表
+        themeOneAction = switchThemeMenu->addAction(tr(THEME_ONE_NAME));
+        themeTwoAction = switchThemeMenu->addAction(tr(THEME_TWO_NAME));
+        themeThreeAction = switchThemeMenu->addAction(tr(THEME_THREE_NAME));
+        themeFourAction = switchThemeMenu->addAction(tr(THEME_FOUR_NAME));
+        themeFiveAction = switchThemeMenu->addAction(tr(THEME_FIVE_NAME));
+        themeSixAction = switchThemeMenu->addAction(tr(THEME_SIX_NAME));
+        themeSevenAction = switchThemeMenu->addAction(tr(THEME_SEVEN_NAME));
+        themeEightAction = switchThemeMenu->addAction(tr(THEME_EIGHT_NAME));
+        themeNineAction = switchThemeMenu->addAction(tr(THEME_NINE_NAME));
+        themeTenAction = switchThemeMenu->addAction(tr(THEME_TEN_NAME));
+
+
         //设置主题项可选
         autoThemeAction->setCheckable(true);
         autoThemeAction->setData(THEME_SYSTEN);
         lightThemeAction->setCheckable(true);
         lightThemeAction->setData(THEME_LIGHT);
         darkThemeAction->setCheckable(true);
-        darkThemeAction->setData(THEME_DARK);
+
+        themeOneAction->setCheckable(true);
+        themeTwoAction->setCheckable(true);
+        themeThreeAction->setCheckable(true);
+        themeFourAction->setCheckable(true);
+        themeFiveAction->setCheckable(true);
+        themeSixAction->setCheckable(true);
+        themeSevenAction->setCheckable(true);
+        themeEightAction->setCheckable(true);
+        themeNineAction->setCheckable(true);
+        themeTenAction->setCheckable(true);
+        // 自定义主题稍后添加（放在列表最底部）
+
+        //初始化时读取配置改变主题颜色
+        QString  expandThemeStr = Settings::instance()->extendColorScheme();
+        if (!expandThemeStr.isEmpty()) {
+            if (THEME_NINE == expandThemeStr  || THEME_TEN == expandThemeStr) {
+                //选中了内置主题在9-10项之间 // 浅色方案系列
+                DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::LightType);
+                emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::LightType);
+            } else if (expandThemeStr == Settings::instance()->m_configCustomThemePath) {
+                // 自定义主题：根据 TitleStyle 决定浅/深
+                if (THEME_LIGHT == Settings::instance()->themeSetting->value("CustomTheme/TitleStyle")) {
+                    DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::LightType);
+                    emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::LightType);
+                } else {
+                    DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::DarkType);
+                    emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::DarkType);
+                }
+            } else {
+                DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::DarkType);
+                emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::DarkType);
+            }
+        }
 
         //创建主题项快捷键组
         group = new QActionGroup(switchThemeMenu);
         group->addAction(autoThemeAction);
         group->addAction(lightThemeAction);
 
-        addThemeFromConfig();
+        group->addAction(themeOneAction);
+        group->addAction(themeTwoAction);
+        group->addAction(themeThreeAction);
+        group->addAction(themeFourAction);
+        group->addAction(themeFiveAction);
+        group->addAction(themeSixAction);
+        group->addAction(themeSevenAction);
+        group->addAction(themeEightAction);
+        group->addAction(themeNineAction);
+        group->addAction(themeTenAction);
 
-        // 自定义主题
+        // 动态添加额外的颜色主题（仅社区版）
+        if (isCommunityEdition()) {
+            addThemeFromConfig();
+        }
+
+        // 最后再添加“自定义主题”，确保位于列表底部
         themeCustomAction = switchThemeMenu->addAction(tr("Custom Theme"));
-        themeCustomAction->setData(THEME_CUSTOM);
-        group->addAction(darkThemeAction);
         themeCustomAction->setCheckable(true);
         group->addAction(themeCustomAction);
 
@@ -2065,8 +2477,13 @@ void MainWindow::addThemeMenuItems()
 
         QObject::connect(group, SIGNAL(triggered(QAction *)),
                          this, SLOT(themeActionTriggeredSlot(QAction *)));
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
         QObject::connect(group, SIGNAL(hovered(QAction *)),
                          this, SLOT(themeActionHoveredSlot(QAction *)));
+#else
+        QObject::connect(group, &QActionGroup::hovered,
+                         this, &MainWindow::themeActionHoveredSlot);
+#endif
 
         checkThemeItem();
 
@@ -2080,14 +2497,20 @@ void MainWindow::addThemeFromConfig()
 {
     QStringList themeList = QTermWidget::availableColorSchemes();
     themeList.sort();
-    int themeCount = themeList.count();
-    for (int i = 0; i < themeCount; ++i) {
-        QString strTheme = themeList[i];
-        if (strTheme == THEME_DARK || strTheme == THEME_LIGHT
-                || strTheme == "customTheme") {
-            // 将深、浅色和自定义主题主题抛弃
+    for (const QString &strTheme : themeList) {
+        // 过滤基础项和已存在的内置项，避免重复
+        if (strTheme == THEME_DARK || strTheme == THEME_LIGHT || strTheme == QLatin1String("customTheme"))
             continue;
-        }
+        if (strTheme == QLatin1String("Theme1") || strTheme == QLatin1String("Theme2") ||
+            strTheme == QLatin1String("Theme3") || strTheme == QLatin1String("Theme4") ||
+            strTheme == QLatin1String("Theme5") || strTheme == QLatin1String("Theme6") ||
+            strTheme == QLatin1String("Theme7") || strTheme == QLatin1String("Theme8") ||
+            strTheme == QLatin1String("Theme9") || strTheme == QLatin1String("Theme10"))
+            continue;
+
+        if (themeBuiltinActionMap.contains(strTheme))
+            continue;
+
         QAction *themeItem = switchThemeMenu->addAction(strTheme);
         themeItem->setCheckable(true);
         group->addAction(themeItem);
@@ -2095,10 +2518,289 @@ void MainWindow::addThemeFromConfig()
     }
 }
 
+void MainWindow::setThemeCheckItemSlot()
+{
+    qCDebug(mainprocess) << "Enter MainWindow::setThemeCheckItemSlot";
+    //如果是手动选中了主题项，直接返回
+    if (true == Settings::instance()->bSwitchTheme)
+        return;
+
+    //以下都是鼠标离开主题项时，还原到之前勾选的主题的处理
+
+    //选中了浅色主题项
+    if (THEME_LIGHT == Settings::instance()->themeStr  &&  THEME_NO == Settings::instance()->extendThemeStr) {
+        Settings::instance()->setColorScheme(THEME_LIGHT);
+        Settings::instance()->setExtendColorScheme(THEME_NO);
+        DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::LightType);
+        emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::LightType);
+        return;
+    }
+
+    //选中了深色主题项
+    if (THEME_DARK == Settings::instance()->themeStr && THEME_NO == Settings::instance()->extendThemeStr) {
+        Settings::instance()->setColorScheme(THEME_DARK);
+        Settings::instance()->setExtendColorScheme(THEME_NO);
+        DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::DarkType);
+        emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::DarkType);
+        return;
+    }
+
+    //选中了跟随系统主题项
+    if (autoThemeAction->isChecked()) {
+        Settings::instance()->setExtendColorScheme(THEME_NO);
+        DGuiApplicationHelper::ColorType type = DGuiApplicationHelper::UnknownType;
+        DGuiApplicationHelper::instance()->setPaletteType(type);
+        emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::instance()->themeType());
+        return;
+    }
+
+    //选中了内置主题在1-8项之间 // 深色方案系列
+    if (THEME_ONE == Settings::instance()->extendThemeStr  || THEME_TWO == Settings::instance()->extendThemeStr  || THEME_THREE == Settings::instance()->extendThemeStr
+            || THEME_FOUR == Settings::instance()->extendThemeStr || THEME_FIVE == Settings::instance()->extendThemeStr
+            || THEME_SIX == Settings::instance()->extendThemeStr || THEME_SEVEN == Settings::instance()->extendThemeStr || THEME_EIGHT == Settings::instance()->extendThemeStr) {
+
+        Settings::instance()->setColorScheme(THEME_DARK);
+        Settings::instance()->setExtendColorScheme(Settings::instance()->extendThemeStr);
+        DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::DarkType);
+        emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::DarkType);
+        return;
+    }
+
+    //选中了内置主题在9-10项之间 // 浅色方案系列
+    if (THEME_NINE == Settings::instance()->extendThemeStr || THEME_TEN == Settings::instance()->extendThemeStr) {
+
+        Settings::instance()->setColorScheme(THEME_LIGHT);
+        Settings::instance()->setExtendColorScheme(Settings::instance()->extendThemeStr);
+        DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::LightType);
+        emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::LightType);
+        return;
+    }
+
+    if (Settings::instance()->extendThemeStr == Settings::instance()->m_configCustomThemePath) {
+
+        // 自定义主题：根据 TitleStyle 决定浅/深
+        Settings::instance()->setExtendColorScheme(Settings::instance()->extendThemeStr);
+        if (THEME_LIGHT == Settings::instance()->themeSetting->value("CustomTheme/TitleStyle")) {
+            Settings::instance()->setColorScheme(THEME_LIGHT);
+            DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::LightType);
+            emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::LightType);
+        } else {
+            Settings::instance()->setColorScheme(THEME_DARK);
+            DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::DarkType);
+            emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::DarkType);
+        }
+        return;
+    }
+
+    // 动态主题回退（仅社区版）
+    if (isCommunityEdition() &&
+        !Settings::instance()->extendThemeStr.isEmpty() &&
+        Settings::instance()->extendThemeStr != THEME_ONE && Settings::instance()->extendThemeStr != THEME_TWO &&
+        Settings::instance()->extendThemeStr != THEME_THREE && Settings::instance()->extendThemeStr != THEME_FOUR &&
+        Settings::instance()->extendThemeStr != THEME_FIVE && Settings::instance()->extendThemeStr != THEME_SIX &&
+        Settings::instance()->extendThemeStr != THEME_SEVEN && Settings::instance()->extendThemeStr != THEME_EIGHT &&
+        Settings::instance()->extendThemeStr != THEME_NINE && Settings::instance()->extendThemeStr != THEME_TEN &&
+        Settings::instance()->extendThemeStr != Settings::instance()->m_configCustomThemePath) {
+
+        Settings::instance()->setExtendColorScheme(Settings::instance()->extendThemeStr);
+        emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::instance()->themeType());
+        return;
+    }
+}
+
+void MainWindow::menuHideSetThemeSlot()
+{
+    qCDebug(mainprocess) << "Enter MainWindow::menuHideSetThemeSlot";
+    if (currCheckThemeAction == lightThemeAction) {
+        Settings::instance()->setColorScheme(THEME_LIGHT);
+        Settings::instance()->setExtendColorScheme(THEME_NO);
+        DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::LightType);
+        emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::LightType);
+        return;
+    } else if (currCheckThemeAction == darkThemeAction) {
+        Settings::instance()->setColorScheme(THEME_DARK);
+        Settings::instance()->setExtendColorScheme(THEME_NO);
+        DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::DarkType);
+        emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::DarkType);
+        return;
+    } else if (currCheckThemeAction == autoThemeAction) {
+        Settings::instance()->setExtendColorScheme(THEME_NO);
+        DGuiApplicationHelper::ColorType type = DGuiApplicationHelper::UnknownType;
+        DGuiApplicationHelper::instance()->setPaletteType(type);
+        emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::instance()->themeType());
+        return;
+    }
+
+    else if (currCheckThemeAction == themeOneAction || currCheckThemeAction == themeTwoAction || currCheckThemeAction == themeThreeAction || currCheckThemeAction == themeFourAction
+             || currCheckThemeAction == themeFiveAction || currCheckThemeAction == themeSixAction || currCheckThemeAction == themeSevenAction || currCheckThemeAction == themeEightAction
+            ) {
+        Settings::instance()->setColorScheme(THEME_DARK);
+
+        if (currCheckThemeAction == themeOneAction)
+            Settings::instance()->setExtendColorScheme(THEME_ONE);
+        else if (currCheckThemeAction == themeTwoAction)
+            Settings::instance()->setExtendColorScheme(THEME_TWO);
+        else if (currCheckThemeAction == themeThreeAction)
+            Settings::instance()->setExtendColorScheme(THEME_THREE);
+        else if (currCheckThemeAction == themeFourAction)
+            Settings::instance()->setExtendColorScheme(THEME_FOUR);
+        else if (currCheckThemeAction == themeFiveAction)
+            Settings::instance()->setExtendColorScheme(THEME_FIVE);
+        else if (currCheckThemeAction == themeSixAction)
+            Settings::instance()->setExtendColorScheme(THEME_SIX);
+        else if (currCheckThemeAction == themeSevenAction)
+            Settings::instance()->setExtendColorScheme(THEME_SEVEN);
+        else if (currCheckThemeAction == themeEightAction)
+            Settings::instance()->setExtendColorScheme(THEME_EIGHT);
+
+        DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::DarkType);
+        emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::DarkType);
+        return;
+    } else if (currCheckThemeAction == themeNineAction || currCheckThemeAction == themeTenAction) {
+        Settings::instance()->setColorScheme(THEME_LIGHT);
+        if (currCheckThemeAction == themeNineAction)
+            Settings::instance()->setExtendColorScheme(THEME_NINE);
+        else
+            Settings::instance()->setExtendColorScheme(THEME_TEN);
+
+        DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::LightType);
+        emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::LightType);
+        return;
+    } else if (currCheckThemeAction == themeCustomAction) {
+        Settings::instance()->setExtendColorScheme(Settings::instance()->m_configCustomThemePath);
+        if (THEME_LIGHT == Settings::instance()->themeSetting->value("CustomTheme/TitleStyle")) {
+            Settings::instance()->setColorScheme(THEME_LIGHT);
+            DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::LightType);
+            emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::LightType);
+        } else {
+            Settings::instance()->setColorScheme(THEME_DARK);
+            DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::DarkType);
+            emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::DarkType);
+        }
+
+        return;
+    } else {
+        // 动态主题（非 Theme1~Theme10、自定义、基础项，仅社区版）
+        if (isCommunityEdition()) {
+            for (auto it = themeBuiltinActionMap.constBegin(); it != themeBuiltinActionMap.constEnd(); ++it) {
+                if (it.value() == currCheckThemeAction) {
+                    Settings::instance()->setExtendColorScheme(it.key());
+                    // 触发终端根据 extendColorScheme 立即应用
+                    emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::instance()->themeType());
+                    return;
+                }
+            }
+        }
+    }
+}
+
 void MainWindow::switchThemeAction(QAction *action)
 {
-    bool isCustom = false;
-    QString colorthemeName = action->text();
+    qCDebug(mainprocess) << "Enter MainWindow::switchThemeAction";
+    //浅色主题
+    if (action == lightThemeAction) {
+
+        if (Settings::instance()->bSwitchTheme) {
+            Settings::instance()->themeStr = THEME_LIGHT;
+            Settings::instance()->extendThemeStr = THEME_NO;
+        }
+
+        Settings::instance()->setColorScheme(THEME_LIGHT);
+        Settings::instance()->setExtendColorScheme(THEME_NO);
+        DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::LightType);
+        emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::LightType);
+        return;
+    }
+    //深色主题
+    if (action == darkThemeAction) {
+
+        if (Settings::instance()->bSwitchTheme) {
+            Settings::instance()->themeStr = THEME_DARK;
+            Settings::instance()->extendThemeStr = THEME_NO;
+        }
+
+        Settings::instance()->setColorScheme(THEME_DARK);
+        Settings::instance()->setExtendColorScheme(THEME_NO);
+        DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::DarkType);
+        emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::DarkType);
+        return;
+
+    }
+    //跟随系统
+    if (action == autoThemeAction) {
+        Settings::instance()->setExtendColorScheme(THEME_NO);
+        DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::UnknownType);
+        // Sync colorScheme to actual system theme so new TermWidgets get correct colors
+        QString sysTheme = (DGuiApplicationHelper::instance()->themeType() == DGuiApplicationHelper::LightType) ? THEME_LIGHT : THEME_DARK;
+        Settings::instance()->setColorScheme(sysTheme);
+        emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::instance()->themeType());
+        return;
+    }
+    //内置主题1
+    if (action == themeOneAction) {
+        switchThemeAction(action, THEME_ONE);
+        return;
+    }
+    //内置主题2
+    if (action == themeTwoAction) {
+        switchThemeAction(action, THEME_TWO);
+        return;
+    }
+    //内置主题3
+    if (action == themeThreeAction) {
+        switchThemeAction(action, THEME_THREE);
+        return;
+    }
+    //内置主题4
+    if (action == themeFourAction) {
+        switchThemeAction(action, THEME_FOUR);
+        return;
+    }
+    //内置主题5
+    if (action == themeFiveAction) {
+        switchThemeAction(action, THEME_FIVE);
+        return;
+    }
+    //内置主题6
+    if (action == themeSixAction) {
+        switchThemeAction(action, THEME_SIX);
+        return;
+    }
+    //内置主题7
+    if (action == themeSevenAction) {
+        switchThemeAction(action, THEME_SEVEN);
+        return;
+    }
+    //内置主题8
+    if (action == themeEightAction) {
+        switchThemeAction(action, THEME_EIGHT);
+        return;
+    }
+    //内置主题9
+    if (action == themeNineAction) {
+        switchThemeAction(action, THEME_NINE);
+        return;
+    }
+    //内置主题10
+    if (action == themeTenAction) {
+        switchThemeAction(action, THEME_TEN);
+        return;
+    }
+
+    // 动态主题（通过配置扫描生成，仅社区版）
+    if (isCommunityEdition()) {
+        for (auto it = themeBuiltinActionMap.begin(); it != themeBuiltinActionMap.end(); ++it) {
+            if (it.value() == action) {
+                const QString name = it.key();
+                Settings::instance()->setExtendColorScheme(name);
+                // 触发立即应用（TermWidget 监听 themeTypeChanged 内应用 extendColorScheme）
+                emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::instance()->themeType());
+                return;
+            }
+        }
+    }
+
+    //自定义主题
     if (action == themeCustomAction) {
         isCustom = true;
     }
@@ -2117,8 +2819,21 @@ void MainWindow::switchThemeAction(QAction *action)
 
 void MainWindow::setTheme(bool isCustom, const QString &themeName)
 {
-    if (isCustom) {
-        Service::instance()->showCustomThemeSettingDialog(this);
+    qCDebug(mainprocess) << "Enter MainWindow::switchThemeAction";
+    //内置深色主题 1-8 之间
+    if (action == themeOneAction || action == themeTwoAction || action == themeThreeAction
+            || action == themeFourAction || action == themeFiveAction || action == themeSixAction
+            || action == themeSevenAction || action == themeEightAction) {
+
+        if (Settings::instance()->bSwitchTheme) {
+            Settings::instance()->themeStr = THEME_DARK;
+            Settings::instance()->extendThemeStr = themeNameStr;
+        }
+
+        Settings::instance()->setColorScheme(THEME_DARK);
+        Settings::instance()->setExtendColorScheme(themeNameStr);
+        DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::DarkType);
+        emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::DarkType);
         return;
     }
     QString strColorTheme = themeName;
@@ -2127,35 +2842,62 @@ void MainWindow::setTheme(bool isCustom, const QString &themeName)
     Settings::instance()->setColorScheme(strColorTheme);
 }
 
-void MainWindow::customTheme(const QString &themeNameStr)
-{
-    if (themeNameStr != Settings::instance()->colorScheme()) {
-        // 写配置文件
-        Settings::instance()->setColorScheme(themeNameStr);
-    } else {
-        // 修改了自定义配置
-        emit Service::instance()->changeColorTheme(themeNameStr);
+        if (Settings::instance()->bSwitchTheme) {
+            Settings::instance()->themeStr = THEME_LIGHT;
+            Settings::instance()->extendThemeStr = themeNameStr;
+        }
+
+        Settings::instance()->setColorScheme(THEME_LIGHT);
+        Settings::instance()->setExtendColorScheme(themeNameStr);
+        DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::LightType);
+        emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::LightType);
+        return;
     }
 
+    if (action == themeCustomAction) {
+        if (Settings::instance()->bSwitchTheme) {
+            if (THEME_LIGHT == Settings::instance()->themeSetting->value("CustomTheme/TitleStyle"))
+                Settings::instance()->themeStr = THEME_LIGHT;
+            else
+                Settings::instance()->themeStr = THEME_DARK;
+
+            Settings::instance()->extendThemeStr = themeNameStr;
+        }
+
+        Settings::instance()->setExtendColorScheme(themeNameStr);
+        if (THEME_LIGHT == Settings::instance()->themeSetting->value("CustomTheme/TitleStyle")) {
+            Settings::instance()->setColorScheme(THEME_LIGHT);
+            DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::LightType);
+            emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::LightType);
+        } else {
+            Settings::instance()->setColorScheme(THEME_DARK);
+            DGuiApplicationHelper::instance()->setPaletteType(DGuiApplicationHelper::DarkType);
+            emit DGuiApplicationHelper::instance()->themeTypeChanged(DGuiApplicationHelper::DarkType);
+        }
+
+        return;
+    }
 }
 
 void MainWindow::themeActionTriggeredSlot(QAction *action)
 {
+    qCDebug(mainprocess) << "Enter MainWindow::themeActionTriggeredSlot";
+    Settings::instance()->bSwitchTheme = true;
     switchThemeAction(action);
     currCheckThemeAction = action;
 }
 
 void MainWindow::themeActionHoveredSlot(QAction *action)
 {
-    QString strColorTheme = action->text();
-    if (!themeBuiltinActionMap.contains(strColorTheme)) {
-        if (action->data().toString() == THEME_CUSTOM) {
-            // 选到自定义主题
-            strColorTheme = Settings::instance()->m_configCustomThemePath;
-        } else {
-            strColorTheme = action->data().toString();
-        }
+    qCDebug(mainprocess) << "Enter MainWindow::themeActionHoveredSlot";
 
+    if (Settings::instance()->bSwitchTheme) {
+        return;
+    }
+    if (switchThemeMenu->hoveredThemeStr != action->text()) {
+        switchThemeMenu->hoveredThemeStr = action->text();
+        Settings::instance()->bSwitchTheme = false;
+        switchThemeAction(action);
     }
     if (switchThemeMenu->hoveredThemeStr != strColorTheme) {
         switchThemeMenu->hoveredThemeStr = strColorTheme;
@@ -2168,11 +2910,17 @@ void MainWindow::themeRecovery()
     emit Service::instance()->changeColorTheme(Settings::instance()->colorScheme());
 }
 
+inline void MainWindow::updateWindowTitle()
+{
+    setWindowTitle(QString("%1 - %2").arg(m_tabbar->tabText(m_tabbar->currentIndex())).arg(QObject::tr("Terminal")));
+}
+
 void MainWindow::onCommandActionTriggered()
 {
+    qCDebug(mainprocess) << "Enter MainWindow::onCommandActionTriggered";
     QAction *commandAction = qobject_cast<QAction *>(sender());
 
-    qInfo() << "commandAction->data().toString() is triggered" << this;
+    qCInfo(mainprocess)  << "commandAction->data().toString() is triggered" << this;
     if (!this->isActiveWindow())
         return ;
 
@@ -2194,6 +2942,7 @@ inline void MainWindow::updateWindowTitle()
 */
 NormalWindow::NormalWindow(TermProperties properties, QWidget *parent): MainWindow(properties, parent)
 {
+    qCDebug(mainprocess) << "Enter NormalWindow::NormalWindow";
     Q_ASSERT(m_isQuakeWindow == false);
     setObjectName("NormalWindow");
     initUI();
@@ -2205,11 +2954,12 @@ NormalWindow::NormalWindow(TermProperties properties, QWidget *parent): MainWind
 
 NormalWindow::~NormalWindow()
 {
-
+    qCDebug(mainprocess) << "Enter NormalWindow::~NormalWindow";
 }
 
 void NormalWindow::initTitleBar()
 {
+    qCDebug(mainprocess) << "Enter NormalWindow::initTitleBar";
     // titleba在普通模式和雷神模型不一样的功能
     m_titleBar = new TitleBar(this);
     m_titleBar->setObjectName("NormalWindowTitleBar");//Add by ut001000 renfeixiang 2020-08-14
@@ -2229,11 +2979,57 @@ void NormalWindow::initTitleBar()
     // 清理titlebar、titlebar所有控件不可获取焦点
     Utils::clearChildrenFocus(titlebar());
     Utils::clearChildrenFocus(m_tabbar);
+    // 重新设置可见控件焦点
+    DIconButton *addButton = m_tabbar->findChild<DIconButton *>("AddButton");
+    if (addButton != nullptr)
+        addButton->setFocusPolicy(Qt::TabFocus);
+    else
+        qCWarning(mainprocess) << "can not found AddButton in DIconButton";
+
+    DIconButton *optionBtn = titlebar()->findChild<DIconButton *>("DTitlebarDWindowOptionButton");
+    if (optionBtn != nullptr)
+        optionBtn->setFocusPolicy(Qt::TabFocus);
+    else
+        qCWarning(mainprocess) << "can not found DTitlebarDWindowOptionButton in DTitlebar";
+
+    QWidget *quitFullscreenBtn = titlebar()->findChild<QWidget *>("DTitlebarDWindowQuitFullscreenButton");
+    if (quitFullscreenBtn != nullptr)
+        quitFullscreenBtn->setFocusPolicy(Qt::TabFocus);
+    else
+        qCWarning(mainprocess) << "can not found DTitlebarDWindowQuitFullscreenButton in DTitlebar";
+
+    DIconButton *minBtn = titlebar()->findChild<DIconButton *>("DTitlebarDWindowMinButton");
+    if (minBtn != nullptr)
+        minBtn->setFocusPolicy(Qt::TabFocus);
+    else
+        qCWarning(mainprocess) << "can not found DTitlebarDWindowMinButton in DTitlebar";
+
+    DIconButton *maxBtn = titlebar()->findChild<DIconButton *>("DTitlebarDWindowMaxButton");
+    if (maxBtn != nullptr)
+        maxBtn->setFocusPolicy(Qt::TabFocus);
+    else
+        qCWarning(mainprocess) << "can not found DTitlebarDWindowMaxButton in DTitlebar";
+
+    DIconButton *closeBtn = titlebar()->findChild<DIconButton *>("DTitlebarDWindowCloseButton");
+    if (closeBtn != nullptr)
+        closeBtn->setFocusPolicy(Qt::TabFocus);
+    else
+        qCWarning(mainprocess) << "can not found DTitlebarDWindowCloseButton in DTitlebar";
+
+    if (addButton != nullptr && optionBtn != nullptr && quitFullscreenBtn != nullptr && minBtn != nullptr && maxBtn != nullptr && closeBtn != nullptr) {
+        QWidget::setTabOrder(addButton, optionBtn);
+        QWidget::setTabOrder(optionBtn, quitFullscreenBtn);
+        QWidget::setTabOrder(quitFullscreenBtn, minBtn);
+        QWidget::setTabOrder(minBtn, maxBtn);
+        QWidget::setTabOrder(maxBtn, closeBtn);
+    }
+
     /********************* Modify by n014361 wangpeili End ************************/
 }
 
 void NormalWindow::initWindowAttribute()
 {
+    qCDebug(mainprocess) << "Enter NormalWindow::initWindowAttribute";
     // init window state.
     QString windowState = getConfigWindowState();
     if ("window_maximum" == windowState) {
@@ -2249,20 +3045,26 @@ void NormalWindow::initWindowAttribute()
         m_IfUseLastSize = true;
         int saveWidth = m_winInfoConfig->value(CONFIG_WINDOW_WIDTH).toInt();
         int saveHeight = m_winInfoConfig->value(CONFIG_WINDOW_HEIGHT).toInt();
-        qInfo() << "load window_width: " << saveWidth;
-        qInfo() << "load window_height: " << saveHeight;
+        qCInfo(mainprocess)  << "load window_width: " << saveWidth;
+        qCInfo(mainprocess)  << "load window_height: " << saveHeight;
         // 如果配置文件没有数据
         if (0 == saveWidth || 0 == saveHeight) {
             saveWidth = WINDOW_DEFAULT_WIDTH;
             saveHeight = WINDOW_DEFAULT_HEIGHT;
         }
-        resize(QSize(saveWidth, saveHeight));
+        auto screen = qApp->primaryScreen();
+        int w = qMin(saveWidth, screen->geometry().width());
+        int h = qMin(saveHeight, screen->geometry().height());
+        if (w != saveWidth || h != saveHeight)
+            qCInfo(mainprocess) << QString("terminal`s size dose not matched screen, actual size: (%1, %2)").arg(w, h);
+        resize(QSize(w, h));
         singleFlagMove();
     }
 }
 
 void NormalWindow::saveWindowSize()
 {
+    qCDebug(mainprocess) << "Enter NormalWindow::saveWindowSize";
     // 过滤普通模式的特殊窗口
     if (!m_IfUseLastSize)
         return;
@@ -2283,13 +3085,14 @@ void NormalWindow::saveWindowSize()
         // 记录最后一个正常窗口的大小
         m_winInfoConfig->setValue(CONFIG_WINDOW_WIDTH, width());
         m_winInfoConfig->setValue(CONFIG_WINDOW_HEIGHT, height());
-        qInfo() << "save windows size:" << width() << height();
+        qCInfo(mainprocess)  << "save windows size:" << width() << height();
         /******** Modify by nt001000 renfeixiang 2020-05-25: 文件wininfo-config.conf中参数,使用定义更换window_width，window_height End***************/
     }
 }
 
 void NormalWindow::switchFullscreen(bool forceFullscreen)
 {
+    qCDebug(mainprocess) << "Enter NormalWindow::switchFullscreen";
     if (forceFullscreen || !window()->windowState().testFlag(Qt::WindowFullScreen))
         window()->setWindowState(windowState() | Qt::WindowFullScreen);
     else
@@ -2301,19 +3104,33 @@ void NormalWindow::switchFullscreen(bool forceFullscreen)
 
 QPoint NormalWindow::calculateShortcutsPreviewPoint()
 {
+    // qCDebug(mainprocess) << "Enter NormalWindow::calculateShortcutsPreviewPoint";
     QRect rect = window()->geometry();
     return QPoint(rect.x() + rect.width() / 2, rect.y() + rect.height() / 2);
 }
 
 void NormalWindow::onAppFocusChangeForQuake(bool checkIsActiveWindow)
 {
+    // qCDebug(mainprocess) << "Enter NormalWindow::onAppFocusChangeForQuake";
     Q_UNUSED(checkIsActiveWindow)
     return;
 }
 
 void NormalWindow::changeEvent(QEvent *event)
 {
+    // qCDebug(mainprocess) << "Enter NormalWindow::changeEvent";
     QMainWindow::changeEvent(event);
+}
+
+void NormalWindow::showEvent(QShowEvent *event)
+{
+    // Let Qt finish its internal focus assignment first, then force focus back to terminal.
+    // This avoids the initial focus landing on TabBar/titlebar controls (TabFocus) which
+    // prevents typing immediately after opening a window.
+    DMainWindow::showEvent(event);
+    QTimer::singleShot(0, this, [this]() {
+        focusCurrentPage();
+    });
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2324,6 +3141,7 @@ QuakeWindow::QuakeWindow(TermProperties properties, QWidget *parent): MainWindow
     // 初始化雷神resize的定时器
     m_resizeTimer(new QTimer(this))
 {
+    qCDebug(mainprocess) << "Enter QuakeWindow::QuakeWindow";
     Q_ASSERT(m_isQuakeWindow == true);
     setObjectName("QuakeWindow");
     initUI();
@@ -2342,6 +3160,7 @@ QuakeWindow::QuakeWindow(TermProperties properties, QWidget *parent): MainWindow
 
 QuakeWindow::~QuakeWindow()
 {
+    qCDebug(mainprocess) << "Enter QuakeWindow::~QuakeWindow";
     // 析构resize定时器
     if (nullptr != m_resizeTimer) {
         delete m_resizeTimer;
@@ -2350,6 +3169,7 @@ QuakeWindow::~QuakeWindow()
 
 void QuakeWindow::initTitleBar()
 {
+    qCDebug(mainprocess) << "Enter QuakeWindow::initTitleBar";
     // titleba在普通模式和雷神模型不一样的功能
     m_titleBar = new TitleBar(this);
     m_titleBar->setObjectName("QuakeWindowTitleBar");//Add by ut001000 renfeixiang 2020-08-14
@@ -2375,32 +3195,32 @@ void QuakeWindow::initTitleBar()
     if (addButton != nullptr)
         addButton->setFocusPolicy(Qt::TabFocus);
     else
-        qInfo() << "can not found AddButton in DIconButton";
+        qCInfo(mainprocess)  << "can not found AddButton in DIconButton";
 
     // 雷神下其它控件一律没有焦点
     DIconButton *optionBtn = titlebar()->findChild<DIconButton *>("DTitlebarDWindowOptionButton");
     if (optionBtn != nullptr)
         optionBtn->setFocusPolicy(Qt::NoFocus);
     else
-        qInfo() << "can not found DTitlebarDWindowOptionButton in DTitlebar";
+        qCInfo(mainprocess)  << "can not found DTitlebarDWindowOptionButton in DTitlebar";
 
     DIconButton *minBtn = titlebar()->findChild<DIconButton *>("DTitlebarDWindowMinButton");
     if (minBtn != nullptr)
         minBtn->setFocusPolicy(Qt::NoFocus);
     else
-        qInfo() << "can not found DTitlebarDWindowMinButton in DTitlebar";
+        qCInfo(mainprocess)  << "can not found DTitlebarDWindowMinButton in DTitlebar";
 
     DIconButton *maxBtn = titlebar()->findChild<DIconButton *>("DTitlebarDWindowMaxButton");
     if (maxBtn != nullptr)
         maxBtn->setFocusPolicy(Qt::NoFocus);
     else
-        qInfo() << "can not found DTitlebarDWindowMaxButton in DTitlebar";
+        qCInfo(mainprocess)  << "can not found DTitlebarDWindowMaxButton in DTitlebar";
 
     DIconButton *closeBtn = titlebar()->findChild<DIconButton *>("DTitlebarDWindowCloseButton");
     if (closeBtn != nullptr)
         closeBtn->setFocusPolicy(Qt::NoFocus);
     else
-        qInfo() << "can not found DTitlebarDWindowCloseButton in DTitlebar";
+        qCInfo(mainprocess)  << "can not found DTitlebarDWindowCloseButton in DTitlebar";
 
     /*QWidget::setTabOrder(addButton, optionBtn);
     QWidget::setTabOrder(optionBtn, minBtn);
@@ -2412,6 +3232,7 @@ void QuakeWindow::initTitleBar()
 
 void QuakeWindow::slotWorkAreaResized()
 {
+    qCInfo(mainprocess)  << "Workspace size change!";
     resizeByCurrentScreen(true);
     setWindowMinHeightForFont();
     updateMinHeight();
@@ -2420,9 +3241,9 @@ void QuakeWindow::slotWorkAreaResized()
 
 void QuakeWindow::initWindowAttribute()
 {
+    qCDebug(mainprocess) << "Enter QuakeWindow::initWindowAttribute";
     /************************ Add by m000743 sunchengxi 2020-04-27:雷神窗口任务栏移动后位置异常问题 Begin************************/
     setWindowRadius(0);
-
     Qt::WindowFlags windowFlags = this->windowFlags();
     setWindowFlags(windowFlags | Qt::WindowStaysOnTopHint/* | Qt::FramelessWindowHint | Qt::BypassWindowManagerHint*/ /*| Qt::Dialog*/);
     //wayland时需要隐藏WindowTitle
@@ -2432,8 +3253,6 @@ void QuakeWindow::initWindowAttribute()
     }
     //add a line by ut001121 zhangmeng 2020-04-27雷神窗口禁用移动(修复bug#22975)
     setEnableSystemMove(false);//    setAttribute(Qt::WA_Disabled, true);
-
-    /********************* Modify by m000714 daizhengwen End ************************/
 
     resizeByCurrentScreen(true);
     // FIXME(hualet): don't know why, just keep it for now.
@@ -2446,32 +3265,40 @@ void QuakeWindow::initWindowAttribute()
 
 void QuakeWindow::saveWindowSize()
 {
+    qCDebug(mainprocess) << "Enter QuakeWindow::saveWindowSize";
     // 记录最后一个正常窗口的大小
     /******** Modify by nt001000 renfeixiang 2020-05-25: 文件wininfo-config.conf中参数,使用定义更换quake_window_Height Begin***************/
     //Modify by ut001000 renfeixiang 2020-11-16 非雷神动画时，在保存雷神窗口的高度到配置文件
     if (isNotAnimation) {
         m_winInfoConfig->setValue(CONFIG_QUAKE_WINDOW_HEIGHT, height());
-        qInfo() << "save quake_window_Height:" << height() << m_desktopMap[m_desktopIndex] << m_desktopIndex;
+        qCInfo(mainprocess)  << "save quake_window_Height:" << height() << m_desktopMap[m_desktopIndex] << m_desktopIndex;
     }
     /******** Modify by nt001000 renfeixiang 2020-05-25: 文件wininfo-config.conf中参数,使用定义更换quake_window_Height End***************/
 }
 
 void QuakeWindow::switchFullscreen(bool forceFullscreen)
 {
+    qCDebug(mainprocess) << "Enter QuakeWindow::switchFullscreen";
     Q_UNUSED(forceFullscreen)
     return;
 }
 
 QPoint QuakeWindow::calculateShortcutsPreviewPoint()
 {
+    qCDebug(mainprocess) << "Enter QuakeWindow::calculateShortcutsPreviewPoint";
     //--added by qinyaning(nyq) to solve the problem of can't show center--//
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     QRect rect = QApplication::desktop()->availableGeometry();
+#else
+    QRect rect = QGuiApplication::primaryScreen()->geometry();
+#endif
     //---------------------------------------------------------------------//
     return QPoint(rect.x() + rect.width() / 2, rect.y() + rect.height() / 2);
 }
 
 void QuakeWindow::onAppFocusChangeForQuake(bool checkIsActiveWindow)
 {
+    qCDebug(mainprocess) << "Enter QuakeWindow::onAppFocusChangeForQuake";
     // 开关关闭，不处理
     if (!Settings::instance()->settings->option("advanced.window.auto_hide_raytheon_window")->value().toBool())
         return;
@@ -2498,6 +3325,7 @@ void QuakeWindow::onAppFocusChangeForQuake(bool checkIsActiveWindow)
 /******** Add by nt001000 renfeixiang 2020-05-20:增加雷神窗口根据字体和字体大小设置最小高度函数 Begin***************/
 void QuakeWindow::setWindowMinHeightForFont()
 {
+    qCDebug(mainprocess) << "Enter QuakeWindow::setWindowMinHeightForFont";
     int height = 0;
     //根据内部term的最小高度设置雷神终端的最小高度, (m_MinHeight-50)/2是内部term的最小高度，50是雷神窗口的标题栏高度
     //add by ut001000 renfeixiang 2020-08-07
@@ -2508,7 +3336,7 @@ void QuakeWindow::setWindowMinHeightForFont()
 /******** Add by nt001000 renfeixiang 2020-05-20:增加雷神窗口根据字体和字体大小设置最小高度函数 End***************/
 void QuakeWindow::updateMinHeight()
 {
-    qInfo() << "start updateMinHeight";
+    qCInfo(mainprocess)  << "Start update min height";
     bool hasHorizontalSplit = false;
     int count = m_termStackWidget->count();
     for (int i = 0; i < count; i++) {
@@ -2529,11 +3357,13 @@ void QuakeWindow::updateMinHeight()
 
 bool QuakeWindow::isShowOnCurrentDesktop()
 {
+    // qCDebug(mainprocess) << "Enter QuakeWindow::isShowOnCurrentDesktop";
     return m_desktopMap[m_desktopIndex];
 }
 
 void QuakeWindow::hideQuakeWindow()
 {
+    qCDebug(mainprocess) << "Enter QuakeWindow::hideQuakeWindow";
     // 隐藏雷神
     // 记录雷神在当前窗口的状态
     m_desktopMap[m_desktopIndex] = false;
@@ -2543,11 +3373,13 @@ void QuakeWindow::hideQuakeWindow()
 
 void QuakeWindow::onResizeWindow()
 {
+    // qCDebug(mainprocess) << "Enter QuakeWindow::onResizeWindow";
     resize(width(), m_quakeWindowHeight);
 }
 
 void QuakeWindow::topToBottomAnimation()
 {
+    qCDebug(mainprocess) << "Enter QuakeWindow::topToBottomAnimation";
     if (nullptr == currentPage())
         return;
 
@@ -2569,6 +3401,7 @@ void QuakeWindow::topToBottomAnimation()
 
 inline void QuakeWindow::onTopToBottomAnimationFinished()
 {
+    qCDebug(mainprocess) << "Enter QuakeWindow::onTopToBottomAnimationFinished";
     updateMinHeight();//恢复外框的原有最小高度值
     // 保证currentPage有值，不然ut多线程下可能会崩溃
     if (currentPage())
@@ -2581,8 +3414,9 @@ inline void QuakeWindow::onTopToBottomAnimationFinished()
 
 void QuakeWindow::bottomToTopAnimation()
 {
+    qCDebug(mainprocess) << "Enter QuakeWindow::bottomToTopAnimation";
     if (!isNotAnimation || nullptr == currentPage()) {
-        qInfo() << "bottomToTopAnimation no need to execute.";
+        qCInfo(mainprocess)  << "bottomToTopAnimation no need to execute.";
         return;
     }
 
@@ -2604,19 +3438,26 @@ void QuakeWindow::bottomToTopAnimation()
 
 inline void QuakeWindow::onBottomToTopAnimationFinished()
 {
+    qCDebug(mainprocess) << "Enter QuakeWindow::onBottomToTopAnimationFinished";
     this->hide();
     isNotAnimation = true;
 }
 
 void QuakeWindow::setHeight(int h)
 {
+    qCDebug(mainprocess) << "Enter QuakeWindow::setHeight";
     this->resize(this->width(), h);
 }
 
 int QuakeWindow::getQuakeAnimationTime()
 {
+    qCDebug(mainprocess) << "Enter QuakeWindow::getQuakeAnimationTime";
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     QDesktopWidget *desktopWidget = QApplication::desktop();
     QRect screenRect = desktopWidget->screenGeometry(); //获取设备屏幕大小
+#else
+    QRect screenRect = QGuiApplication::primaryScreen()->geometry();
+#endif
     //quakeAnimationBaseTime+quakeAnimationHighDistributionTotalTime的时间是雷神窗口最大高度时动画效果时间
     //动画时间计算方法：3quakeAnimationBaseTime加上(quakeAnimationHighDistributionTotalTime乘以当前雷神高度除以雷神最大高度)所得时间，为各个高度时动画时间
     int quakeAnimationBaseTime = Settings::instance()->QuakeDuration() * 2 / 3;
@@ -2627,6 +3468,7 @@ int QuakeWindow::getQuakeAnimationTime()
 
 xcb_atom_t QuakeWindow::internAtom(xcb_connection_t *connection, const char *name, bool only_if_exists)
 {
+    qCDebug(mainprocess) << "Enter QuakeWindow::internAtom";
     if (!name || *name == 0)
         return  XCB_NONE;
 
@@ -2644,6 +3486,7 @@ xcb_atom_t QuakeWindow::internAtom(xcb_connection_t *connection, const char *nam
 
 xcb_atom_t QuakeWindow::internAtom(const char *name, bool only_if_exists)
 {
+    qCDebug(mainprocess) << "Enter QuakeWindow::internAtom";
     return internAtom(QX11Info::connection(), name, only_if_exists);
 }
 
@@ -2654,8 +3497,9 @@ xcb_atom_t QuakeWindow::internAtom(const char *name, bool only_if_exists)
  */
 void QuakeWindow::sendWindowForhibitMove(bool forhibit)
 {
-    if (!QX11Info::connection()) {
-        qWarning() << "QX11Info::connection() is " << QX11Info::connection();
+    qCDebug(mainprocess) << "Enter QuakeWindow::sendWindowForhibitMove";
+    if(!QX11Info::connection()){
+        qCWarning(mainprocess) << "QX11Info::connection() is " << QX11Info::connection();
         return ;
     }
 
@@ -2670,18 +3514,19 @@ void QuakeWindow::resizeByCurrentScreen(bool force)
     QPoint cursorPoint = QCursor::pos();
     const QScreen *quakeScreen = QGuiApplication::screenAt(pos());
     const QScreen *cursorScreen = QGuiApplication::screenAt(cursorPoint);
-    if (force || (!isVisible() && quakeScreen->serialNumber() != cursorScreen->serialNumber())) {
+    if (cursorScreen && (force || (!isVisible() && quakeScreen && quakeScreen->serialNumber() != cursorScreen->serialNumber()))) {
         int windowWidth = cursorScreen->geometry().width();
         move(cursorScreen->geometry().topLeft());
         setFixedWidth(windowWidth);
         setMinimumHeight(60);
         setMaximumHeight(cursorScreen->geometry().height() * 2 / 3);
-        connect(cursorScreen, &QScreen::availableGeometryChanged, this, &QuakeWindow::slotWorkAreaResized);
+        connect(cursorScreen, &QScreen::availableGeometryChanged, this, &QuakeWindow::slotWorkAreaResized, Qt::UniqueConnection);
     }
 }
 
 void QuakeWindow::changeEvent(QEvent *event)
 {
+    // qCDebug(mainprocess) << "Enter QuakeWindow::changeEvent";
     // 不是激活事件,不处理
     if (QEvent::ActivationChange == event->type()) {
         bool checkIsActiveWindow = true;
@@ -2699,6 +3544,7 @@ void QuakeWindow::changeEvent(QEvent *event)
 
 void QuakeWindow::showEvent(QShowEvent *event)
 {
+    // qCDebug(mainprocess) << "Enter QuakeWindow::showEvent";
     /***add begin by ut001121 zhangmeng 20200528 重新获取桌面索引 修复BUG29082***/
     m_desktopIndex = DBusManager::callKDECurrentDesktop();
     /***add end by ut001121***/
@@ -2706,10 +3552,15 @@ void QuakeWindow::showEvent(QShowEvent *event)
     m_desktopMap[m_desktopIndex] = true;
 
     DMainWindow::showEvent(event);
+    // Ensure quake window is ready for typing immediately after it is shown.
+    QTimer::singleShot(0, this, [this]() {
+        focusCurrentPage();
+    });
 }
 
 bool QuakeWindow::event(QEvent *event)
 {
+    // qCDebug(mainprocess) << "Enter QuakeWindow::event";
     /***add begin by ut001121 zhangmeng 20200606 切换窗口拉伸属性 修复BUG24430***/
     //Add by ut001000 renfeixiang 2020-11-16 增加雷神动画的标志isNotAnimation， 雷神动画效果时，不进行窗口拉伸属性
     if (QEvent::HoverMove == event->type() && isNotAnimation)
@@ -2722,7 +3573,8 @@ bool QuakeWindow::event(QEvent *event)
 
 bool QuakeWindow::eventFilter(QObject *watched, QEvent *event)
 {
-    //fix bug: 64490 勾选“丢失焦点后隐藏雷神窗口”，最小化雷神终端后不能再次调出雷神终端
+    // qCDebug(mainprocess) << "Enter QuakeWindow::eventFilter";
+    //fix bug: 64490 勾选"丢失焦点后隐藏雷神窗口"，最小化雷神终端后不能再次调出雷神终端
     // 丢失焦点后隐藏雷神窗口开关打开的情况下
     if (watched == this &&
             Settings::instance()->settings->option("advanced.window.auto_hide_raytheon_window")->value().toBool()) {
@@ -2801,7 +3653,12 @@ bool QuakeWindow::eventFilter(QObject *watched, QEvent *event)
 
 int QuakeWindow::getQuakeHeight()
 {
+    qCDebug(mainprocess) << "Enter QuakeWindow::getQuakeHeight";
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     int screenHeight = qApp->desktop()->screenGeometry().height();
+#else
+    int screenHeight = QGuiApplication::primaryScreen()->geometry().height();
+#endif
     int minHeight = screenHeight * 1 / 3;
     return m_winInfoConfig->value(CONFIG_QUAKE_WINDOW_HEIGHT, minHeight).toInt();
 }
@@ -2815,10 +3672,15 @@ void QuakeWindow::switchEnableResize()
 
 void QuakeWindow::switchEnableResize(bool isEnable)
 {
+    qCDebug(mainprocess) << "Enter QuakeWindow::switchEnableResize";
     if (isEnable) {
         // 设置最小高度和最大高度，解放fixSize设置的不允许拉伸
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
         QDesktopWidget *desktopWidget = QApplication::desktop();
         QRect screenRect = desktopWidget->screenGeometry(); //获取设备屏幕大小
+#else
+        QRect screenRect = QGuiApplication::primaryScreen()->geometry();
+#endif
         //Add by ut001000 renfeixiang 2020-11-16 修改成使用写好的设置最小值的函数
         updateMinHeight();
         setMaximumHeight(screenRect.height() * 2 / 3);

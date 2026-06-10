@@ -23,7 +23,6 @@
 #include "listview.h"
 
 #include <DAbstractDialog>
-#include <DApplicationHelper>
 #include <DLabel>
 #include <DLineEdit>
 #include <DFontSizeManager>
@@ -32,8 +31,15 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 
-DWIDGET_USE_NAMESPACE
+// Qt5/Qt6 compatibility for DApplicationHelper
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    #include <DGuiApplicationHelper>
+    #define DApplicationHelper DGuiApplicationHelper
+#else
+    #include <DApplicationHelper>
+#endif
 
+DWIDGET_USE_NAMESPACE
 
 class GroupConfigOptDlg : public DAbstractDialog
 {
@@ -42,6 +48,7 @@ public:
     GroupConfigOptDlg(const QString &groupName = QString(), QWidget *parent = nullptr);
 
 private:
+    QString      m_originalGroupName;
     DLabel      *m_iconLabel;
     DLabel      *m_titleLabel;
     DLineEdit   *m_groupNameEdit;

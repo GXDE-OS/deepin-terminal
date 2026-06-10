@@ -66,6 +66,7 @@ public:
      * @return
      */
     bool cursorBlink() const;
+    bool enableSetCursorPosition() const;
     /**
      * @brief enableSetCursorPosition
      * @return
@@ -120,6 +121,8 @@ public:
      * @return
      */
     bool ScrollWheelZoom();
+    // 是否允许 Ctrl+Alt+滚轮 调整透明度
+    bool OpacityCtrlAltScrollWheel();
 //    void reload();
     /**
      * @brief 标签标题
@@ -217,6 +220,19 @@ public:
     bool enableDebuginfod();
     // deepin-terminal设置的DEBUGINFOD_URLS环境变量值
     QString debuginfodUrls();
+    /**
+     * @brief 获取当前配置粘贴是否为选择内容
+     * @author dzw1995
+     * @return
+     */
+    bool allowOSC52() const;
+
+    /**
+     * @brief 历史记录行数
+     * @author Archie Meng
+     * @return
+     */
+    int historySize() const;
 
     /**
      * @brief 历史记录行数
@@ -313,6 +329,7 @@ signals:
     void fontSizeChanged(int fontSize);
     void fontChanged(QString fontName);
     void wordCharactersChanged(QString wordCharacters);
+    void enableSetCursorPosition(bool enable);
     void historySizeChanged(int historySize);
 
     // 设置中的标签标题格式变化

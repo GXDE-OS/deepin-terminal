@@ -15,6 +15,7 @@
 #include <DSplitter>
 
 #include <QWidget>
+#include <QTextCodec>
 
 DWIDGET_USE_NAMESPACE
 

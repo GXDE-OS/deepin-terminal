@@ -5,9 +5,8 @@
 
 #include "themepreviewarea.h"
 
-#include <DApplicationHelper>
-#include <DGuiApplicationHelper>
 #include <DPaletteHelper>
+#include <DPalette>
 
 #include <QPainter>
 #include <QImage>
@@ -16,14 +15,19 @@
 #include <QPaintEvent>
 #include <QBitmap>
 #include <QPainterPath>
+#include <QLoggingCategory>
+
+Q_DECLARE_LOGGING_CATEGORY(views)
 
 ThemePreviewArea::ThemePreviewArea(QWidget *parent) : DWidget(parent), m_titleRect(0, 0, 439, 35)
 {
+    qCDebug(views) << "ThemePreviewArea constructor";
     setFixedSize(439, 113);
 }
 
 void ThemePreviewArea::paintEvent(QPaintEvent *event)
 {
+    // qCDebug(views) << "Enter ThemePreviewArea::paintEvent";
     QPainter painter(this);
     //抗锯设置
     painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
@@ -82,46 +86,61 @@ void ThemePreviewArea::paintEvent(QPaintEvent *event)
     // 绘制边框
     painter.drawPath(FramePath);
 
-
+    // qCDebug(views) << "Branch: Calling parent paint event";
     DWidget::paintEvent(event);
 }
 
 void ThemePreviewArea::setTitleStyle(const QString &titleStyle)
 {
-    if ("Light" == titleStyle)
+    qCDebug(views) << "ThemePreviewArea::setTitleStyle - Style:" << titleStyle;
+    if ("Light" == titleStyle) {
+        qCDebug(views) << "Loading light theme title image";
         m_titlePixmap.load(":/logo/headbar-light.svg");
-    else
+    } else {
+        qCDebug(views) << "Loading dark theme title image";
         m_titlePixmap.load(":/logo/headbar-dark.svg");
+    }
 
+    qCDebug(views) << "Branch: Updating widget";
     update();
 }
 
 void ThemePreviewArea::setBackgroundColor(const QColor &color)
 {
+    // qCDebug(views) << "Enter ThemePreviewArea::setBackgroundColor with color:" << color;
     m_backgroundColor = color;
     update();
 }
 
 void ThemePreviewArea::setForegroundgroundColor(const QColor &color)
 {
+    // qCDebug(views) << "Enter ThemePreviewArea::setForegroundgroundColor with color:" << color;
     m_foregroundColor = color;
     update();
 }
 
 void ThemePreviewArea::setPs1Color(const QColor &color)
 {
+    // qCDebug(views) << "Enter ThemePreviewArea::setPs1Color with color:" << color;
     m_ps1Color = color;
     update();
 }
 
 void ThemePreviewArea::setPs2Color(const QColor &color)
 {
+    // qCDebug(views) << "Enter ThemePreviewArea::setPs2Color with color:" << color;
     m_ps2Color = color;
     update();
 }
 
 void ThemePreviewArea::setAllColorParameter(const QColor &foregroundColorParameter, const QColor &backgroundColorParameter, const QColor &ps1ColorParameter, const QColor &ps2ColorParameter)
 {
+    qCDebug(views) << "ThemePreviewArea::setAllColorParameter - Setting colors:";
+    qCDebug(views) << "Foreground:" << foregroundColorParameter;
+    qCDebug(views) << "Background:" << backgroundColorParameter;
+    qCDebug(views) << "PS1:" << ps1ColorParameter;
+    qCDebug(views) << "PS2:" << ps2ColorParameter;
+    
     m_foregroundColor = foregroundColorParameter;
     m_backgroundColor = backgroundColorParameter;
     m_ps1Color = ps1ColorParameter;

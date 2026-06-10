@@ -14,29 +14,46 @@
 
 DWIDGET_USE_NAMESPACE
 
+#ifdef QT_DEBUG
+Q_LOGGING_CATEGORY(encodeplugin,"org.deepin.terminal.encodeplugin")
+#else
+Q_LOGGING_CATEGORY(encodeplugin,"org.deepin.terminal.encodeplugin",QtInfoMsg)
+#endif
+
 EncodeListModel::EncodeListModel(QObject *parent) : QStandardItemModel(parent)
 {
+    qCDebug(encodeplugin) << "EncodeListModel constructor enter";
     Utils::set_Object_Name(this);
     initEncodeData();
+    qCDebug(encodeplugin) << "EncodeListModel constructor exit";
 }
 
 int EncodeListModel::rowCount(const QModelIndex &parent) const
 {
+    qCDebug(encodeplugin) << "rowCount enter";
     Q_UNUSED(parent);
     //
-    return m_encodeData.count();
+    int count = m_encodeData.count();
+    qCDebug(encodeplugin) << "rowCount exit, count:" << count;
+    return count;
 }
 
 QVariant EncodeListModel::data(const QModelIndex &index, int role) const
 {
+    qCDebug(encodeplugin) << "data enter, row:" << index.row() << "role:" << role;
     Q_UNUSED(role);
     const int row = index.row();
-    return m_encodeData[row];
+    QVariant result = m_encodeData[row];
+    qCDebug(encodeplugin) << "data exit, result:" << result;
+    return result;
 }
 
 QList<QByteArray> EncodeListModel::listData()
 {
-    return  m_encodeData;
+    qCDebug(encodeplugin) << "listData enter";
+    QList<QByteArray> result = m_encodeData;
+    qCDebug(encodeplugin) << "listData exit, count:" << result.count();
+    return result;
 }
 
 void EncodeListModel::initEncodeData()
@@ -87,10 +104,10 @@ void EncodeListModel::initEncodeData()
             }
         }
         if (!bFind)
-            qInfo() << "encode name :" << name << "not find!";
+            qCWarning(encodeplugin) << "The encoding(" << name << ") in the terminal encoding list is not found in the list of supported encodeings!";
         else
             m_encodeData << encodename;
     }
 
-    qInfo() << "QTextCodec::availableCodecs" << m_encodeData.count();
+    qCInfo(encodeplugin) << "The number("<<  m_encodeData.count() << ") of system encoding formats supported by the terminal.";
 }

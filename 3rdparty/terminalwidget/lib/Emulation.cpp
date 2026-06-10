@@ -51,6 +51,7 @@
 #include "Session.h"
 #include "SessionManager.h"
 #include "TerminalDisplay.h"
+#include "encodes/detectcode.h"
 
 using namespace Konsole;
 
@@ -297,6 +298,44 @@ void Emulation::sendMouseEvent(int /*buttons*/, int /*column*/, int /*row*/, int
     // default implementation does nothing
 }
 
+static int isUse2005Standard = -1;
+/**
+   @brief 检测当前iconv使用的GB18030编码是否为2005标准，2005标准强制使用上层补丁版本
+        通过检测2005和2022编码转的差异，以附录D中的编码为例验证
+        2005标准 0xFE51 --> \u20087
+        2022标准 0xFE51 --> \uE816
+   @return iconv使用GB18030编码是否为2005标准，默认返回true
+ */
+bool Emulation::detectIconvUse2005Standard()
+{
+    iconv_t handle = iconv_open("UTF-8", "GB18030");
+    if (handle == reinterpret_cast<iconv_t>(-1)) {
+        return true;
+    }
+
+    QByteArray input("\xFE\x51");
+    QByteArray output(input.size() * 2, 0);
+    char *inputData = input.data();
+    char *outputData = output.data();
+    size_t inputLen = static_cast<size_t>(input.count());
+    size_t outputLen = static_cast<size_t>(output.count());
+
+    const size_t ret = iconv(handle, &inputData, &inputLen, &outputData, &outputLen);
+    iconv_close(handle);
+
+    if (ret == static_cast<size_t>(-1)) {
+        return true;
+    }
+
+    if (!output.contains("\uE816")) {
+        qInfo() << "Current iconv gb18030 standard is 2005.";
+        return true;
+    }
+
+    qInfo() << "Current iconv gb18030 standard is 2022.";
+    return false;
+}
+
 /*
    We are doing code conversion from locale to unicode first.
 TODO: Character composition from the old code.  See #96536
@@ -318,6 +357,7 @@ void Emulation::receiveData(const char *text, int length, bool isCommandExec)
     if (QString(_codec->name()).toUpper().startsWith("GB") && !isCommandExec) {
         if (_decoder != nullptr) {
             delete _decoder;
+            _decoder = nullptr;
         }
         QTextCodec *textCodec = QTextCodec::codecForName("UTF-8");
         _decoder = textCodec->makeDecoder();
@@ -327,14 +367,29 @@ void Emulation::receiveData(const char *text, int length, bool isCommandExec)
         QByteArray gbkarr = gbk->fromUnicode(utf16Text);
 
         if (_decoder != nullptr) {
-            delete _decoder;
+          delete _decoder;
+          _decoder = nullptr;
         }
         textCodec = QTextCodec::codecForName(_codec->name());
         _decoder = textCodec->makeDecoder();
         utf16Text = _decoder->toUnicode(gbkarr);
+        //setIsCodecGB18030(false);
     }
     else {
-        utf16Text = _decoder->toUnicode(text, length);
+        if(isUse2005Standard == -1){
+            isUse2005Standard = detectIconvUse2005Standard();
+            qInfo() << "Is Used 2005 standard's gb18030 iconv?" << isUse2005Standard;
+        }
+        if(_codec->name().toUpper().contains("GB18030") && isUse2005Standard == 1) {
+            //setIsCodecGB18030(true);
+            QByteArray gbkarr(text, length);
+            QByteArray Outdata;
+            DetectCode::ChangeFileEncodingFormat(gbkarr, Outdata, QString("GB18030"), QString("UTF-8"));
+            utf16Text = QString(Outdata);
+        } else {
+            utf16Text = _decoder->toUnicode(text, length);
+            //setIsCodecGB18030(false);
+        }
     }
 
     std::wstring unicodeText = utf16Text.toStdWString();
@@ -554,7 +609,14 @@ uint ExtendedCharTable::createExtendedChar(uint *unicodePoints, ushort length)
 
     // add the new sequence to the table and
     // return that index
-    auto buffer = new uint[length + 1];
+    auto buffer = new (std::nothrow) uint[length + 1];
+    if (!buffer) {
+      qCritical()
+          << "Emulation: Failed to allocate extended character buffer (size:"
+          << (length + 1) << "uints," << (length + 1) * sizeof(uint)
+          << "bytes)";
+      return 0;
+    }
     buffer[0] = length;
     for (int i = 0; i < length; i++) {
         buffer[i + 1] = unicodePoints[i];

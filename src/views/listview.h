@@ -322,12 +322,16 @@ private:
      */
     void onCustomItemModify(const QString &key, bool isFocusOn);
 
-    void deleteItem(const QString &key, ItemFuncType type);
-
     /**
      * @brief 根据布局模式(紧凑)变更更新界面布局
      */
     Q_SLOT void updateSizeMode();
+    void deleteItem(const QString &key, ItemFuncType type);
+    
+    /**
+     * @brief 删除服务器对话框完成处理函数
+     */
+    void onDeleteServerDialogFinished(int result);
 };
 
 #endif // LISTVIEW_H

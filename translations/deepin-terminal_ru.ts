@@ -61,7 +61,7 @@
         <location filename="../src/customcommand/customcommandoptdlg.cpp" line="624"/>
         <source>OK</source>
         <comment>button</comment>
-        <translation>OK</translation>
+        <translation>ОК</translation>
     </message>
     <message>
         <location filename="../src/customcommand/customcommandoptdlg.cpp" line="380"/>
@@ -237,7 +237,7 @@
         <location filename="../src/views/listview.cpp" line="498"/>
         <location filename="../src/views/listview.cpp" line="880"/>
         <source>Are you sure you want to delete %1?</source>
-        <translation>Вы уверены, что хотите удалить %1?</translation>
+        <translation>Уверены, что хотите удалить %1?</translation>
     </message>
 </context>
 <context>
@@ -420,7 +420,7 @@
         <location filename="../src/main/mainwindow.cpp" line="1658"/>
         <location filename="../src/settings/settings_translation.cpp" line="67"/>
         <source>Remote management</source>
-        <translation>Удаленное управление</translation>
+        <translation>Удалённое управление</translation>
     </message>
     <message>
         <location filename="../src/main/mainwindow.cpp" line="1638"/>
@@ -690,7 +690,7 @@
     <message>
         <location filename="../src/main/terminalapplication.cpp" line="28"/>
         <source>Terminal is an advanced terminal emulator with workspace, multiple windows, remote management, quake mode and other features.</source>
-        <translation>Deepin Терминал является передовым эмулятором терминала с рабочими областями, многооконным интерфейсом, удаленным управлением, выпадающим режимом и другими функциями. </translation>
+        <translation>Терминал Deepin является передовым эмулятором терминала с рабочими областями, многооконным интерфейсом, удалённым управлением, выпадающим режимом в стиле Quake и другими функциями. </translation>
     </message>
     <message>
         <location filename="../src/main/mainwindow.cpp" line="1590"/>
@@ -711,7 +711,7 @@
     <message>
         <location filename="../src/main/mainwindow.cpp" line="1610"/>
         <source>Switch focus to &quot;+&quot; icon</source>
-        <translation>Переключить фокус на значок &quot;+&quot;</translation>
+        <translation>Переключить фокус на значок «+»</translation>
     </message>
     <message>
         <location filename="../src/common/utils.cpp" line="157"/>
@@ -797,7 +797,7 @@
         <location filename="../src/common/utils.cpp" line="298"/>
         <source>OK</source>
         <comment>button</comment>
-        <translation>OK</translation>
+        <translation>ОК</translation>
     </message>
     <message>
         <location filename="../src/common/utils.cpp" line="338"/>
@@ -876,6 +876,55 @@
         <location filename="../src/views/tabrenamedlg.cpp" line="245"/>
         <source>Confirm</source>
         <comment>button</comment>
+        <translation>Подтвердить</translation>
+    </message>
+    <message>
+        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="387"/>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="476"/>
+        <source>The name should be no more than 32 characters</source>
+        <translation>Имя должно быть не более 32 символов.</translation>
+    </message>
+    <message>
+        <location filename="../src/common/utils.cpp" line="142"/>
+        <location filename="../src/main/mainwindow.cpp" line="1774"/>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="546"/>
+        <source>Select</source>
+        <translation>Выбрать</translation>
+    </message>
+    <message>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="542"/>
+        <source>Select the private key file</source>
+        <translation>Выберите файл закрытого ключа</translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="121"/>
+        <location filename="../src/views/tabrenamewidget.cpp" line="111"/>
+        <source>Tab title format</source>
+        <translation>Формат заголовка вкладки</translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="123"/>
+        <location filename="../src/views/tabrenamewidget.cpp" line="113"/>
+        <source>Remote tab title format</source>
+        <translation>Формат заголовка удаленной вкладки</translation>
+    </message>
+    <message>
+        <location filename="../src/main/mainwindow.cpp" line="1638"/>
+        <location filename="../src/views/tabbar.cpp" line="483"/>
+        <source>Close other tabs</source>
+        <translation>Закрыть другие вкладки</translation>
+    </message>
+    <message>
+        <location filename="../src/views/listview.cpp" line="894"/>
+        <source>Delete</source>
+        <comment>button</comment>
+        <translation>Удалить</translation>
+    </message>
+    <message>
+        <location filename="../src/views/listview.cpp" line="500"/>
+        <location filename="../src/views/tabrenamedlg.cpp" line="245"/>
+        <source>Confirm</source>
+        <comment>button</comment>
         <translation>Применить</translation>
     </message>
 </context>
@@ -889,7 +938,7 @@
     <message>
         <location filename="../src/remotemanage/remotemanagementpanel.cpp" line="211"/>
         <source>Add Server</source>
-        <translation>Добавить Сервер</translation>
+        <translation>Добавить сервер</translation>
     </message>
     <message>
         <location filename="../src/remotemanage/remotemanagementpanel.cpp" line="215"/>
@@ -902,7 +951,7 @@
     <message>
         <location filename="../src/remotemanage/remotemanagementplugn.cpp" line="75"/>
         <source>Remote management</source>
-        <translation>Удаленное управление</translation>
+        <translation>Удалённое управление</translation>
     </message>
     <message>
         <location filename="../src/remotemanage/remotemanagementplugn.cpp" line="201"/>
@@ -936,7 +985,7 @@
     <message>
         <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="91"/>
         <source>Add Server</source>
-        <translation>Добавить Сервер</translation>
+        <translation>Добавить сервер</translation>
     </message>
     <message>
         <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="127"/>
@@ -1025,7 +1074,7 @@
     <message>
         <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="228"/>
         <source>Edit Server</source>
-        <translation>Редактировать Сервер</translation>
+        <translation>Изменить сервер</translation>
     </message>
     <message>
         <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="229"/>
@@ -1070,7 +1119,7 @@
         <location filename="../src/main/service.cpp" line="412"/>
         <source>OK</source>
         <comment>button</comment>
-        <translation>OK</translation>
+        <translation>ОК</translation>
     </message>
 </context>
 <context>
@@ -1251,7 +1300,7 @@
     <message>
         <location filename="../src/views/termwidget.cpp" line="533"/>
         <source>Remote management</source>
-        <translation>Удаленное управление</translation>
+        <translation>Удалённое управление</translation>
     </message>
     <message>
         <location filename="../src/views/termwidget.cpp" line="537"/>
@@ -1294,7 +1343,7 @@
         <location filename="../src/common/utils.cpp" line="265"/>
         <source>OK</source>
         <comment>button</comment>
-        <translation>OK</translation>
+        <translation>ОК</translation>
     </message>
 </context>
 </TS>

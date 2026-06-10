@@ -1,144 +1,339 @@
-deepin-terminal (6.0.17) unstable; urgency=medium
+deepin-terminal (6.5.36) unstable; urgency=medium
 
-  * fix: crash on treeland (#378)
+  * test: migrate unit tests from Qt5 to Qt5/Qt6 compatible
+  * fix(settings): sync colorScheme to system theme on startup and follow-system switch
 
- -- Yutao Meng <mengyutao@deepin.org>  Sat, 07 Dec 2024 13:48:11 +0800
+ -- dengzhongyuan <dengzhongyuan@uniontech.com>  Thu, 04 Jun 2026 20:56:16 +0800
 
-deepin-terminal (6.0.16) unstable; urgency=medium
+deepin-terminal (6.5.35) unstable; urgency=medium
 
-  * feat: Add debuginfod settings (#366)
+  * chore: Update version to 6.5.35
+  * fix(views): adaptive width layout for remote management
+  * [skip CI] Translate deepin-terminal.ts in ru
+  * [skip CI] Translate deepin-terminal.ts in ru
+  * [skip CI] Translate deepin-terminal.ts in ru
+  * [skip CI] Translate deepin-terminal.ts in ru
 
- -- Yutao Meng <mengyutao@deepin.org>  Tue, 19 Nov 2024 10:05:41 +0800
+ -- zhanghongyuan <zhanghongyuan@uniontech.com>  Thu, 14 May 2026 16:29:10 +0800
 
-deepin-terminal (6.0.15) unstable; urgency=medium
+deepin-terminal (6.5.34) unstable; urgency=medium
 
-  * Release 6.0.15
-  * feat: [UI] Adapt compact mode.(https://pms.uniontech.com/bug-view-279709.html)
+  * Update version to 6.5.34.
 
- -- Zhang Kun <zhangkun2@uniontech.com>  Fri, 25 Oct 2024 18:09:30 +0800
+ -- Tian ShiLin <tianshilin@uniontech.com>  Sat, 09 May 2026 13:30:19 +0800
 
-deepin-terminal (6.0.14) unstable; urgency=medium
+deepin-terminal (6.5.33) unstable; urgency=medium
 
-  * chore: Update translation (#346)
+  * Update version to 6.5.33.
 
- -- Zhang Kun <zhangkun2@uniontech.com>  Thu, 01 Aug 2024 09:31:00 +0800
+ -- Tian ShiLin <tianshilin@uniontech.com>  Thu, 23 Apr 2026 19:11:21 +0800
 
-deepin-terminal (6.0.13) unstable; urgency=medium
+deepin-terminal (6.5.32) unstable; urgency=medium
 
-  * fix: Remote server item text overlaps with buttons
-    新增Ctrl + 鼠标点击移动光标功能
-    为Ctrl+鼠标左键点击移动光标功能新增配置
-    fix: item is hidden partially in settingsdialog
-    fix: Bug# 点击自定义主题后未确认，菜单勾选状态错误
-    更新退出终端的警告弹窗提示语
+  * chore: add quotes to rm command in postrm script
+  * chore: update workflows
 
- -- Yutao Meng <mengyutao@deepin.org>  Fri, 21 Jun 2024 13:41:33 +0800
+ -- Liu Zheng <liuzheng@uniontech.com>  Thu, 16 Apr 2026 19:47:34 +0800
 
-deepin-terminal (6.0.12) unstable; urgency=medium
+deepin-terminal (6.5.31) unstable; urgency=medium
 
-  * fix: the quake window overlaps with the dock (Issue: #6557)
+  * update version to 6.5.31.
+
+ -- Tian ShiLin <tianshilin@uniontech.com>  Thu, 16 Apr 2026 11:28:49 +0800
+
+deepin-terminal (6.5.30) unstable; urgency=medium
+
+  * fix: correct base64 data extraction in OSC52 by removing BEL from buffer calc
+  * fix: remove fallback logic in BEL position detection
+  * fix: OSC52 clipboard last character corruption
+  * fix: improve smart scroll logic for terminal output
+  * fix: smart scroll logic - use one-liner setTrackOutput(isAtEndOfOutput())
+  * feat: implement smart scroll for terminal output
+  * chore(i18n): migrate Transifex config to yaml format
+  * fix: fix crash on Arch when creating new tab & fix cmake compile error
+  * fix(search-bar): adjust search icon size to fix oversized display
+  * i18n: update zh_HK and zh_TW translations
+  * security: disable OSC52 by default
+  * i18n: update translations
+  * feat: implement OSC52 remote clipboard functionality
+  * fix(screen): correctly handle UTF-16 surrogate pairs in URL extraction
+  * feat: enable treeland singleton flag for deepin-terminal
+
+ -- Wang Yu <wangyu@uniontech.com>  Fri, 10 Apr 2026 15:59:14 +0800
+
+deepin-terminal (6.5.29) unstable; urgency=medium
+
+  * fix: improve theme handling in TermWidget
+  * feat: update window title based on current tab
+  * fix: flow control configuration inconsistency
   * feat: load keyboard layouts from runtime dir first
-  * fix: cursor position error when display completion (Issue: #5208)
-  * fix: local keytab logic error
-  * feat: Supports dsg-terminal-exec scheme (Issue: #7439)
+  * feat: remove the limit of term splitting (#353)
+  * feat: use DDesktopServices to open files and folders
+  * fix: prevent window manager from disabling blur on Quake window
+  * fix: use Qt::UniqueConnection to avoid duplicate signal connections
+  * fix: add null check for QScreen in resizeByCurrentScreen
+  * fix: sync build warning fixes and treeland crash fix from master
+  * fix: swap previous/next tab shortcuts to correct order
+  * fix: fix translation generation for Qt6
 
- -- Wang Yixue <wangyixue@deepin.org>  Tue, 12 Mar 2024 10:06:23 +0800
+ -- Wang Yu <wangyu@uniontech.com>  Thu, 12 Mar 2026 20:09:44 +0800
 
-deepin-terminal (6.0.11) unstable; urgency=medium
+deepin-terminal (6.5.28) unstable; urgency=medium
 
-  * 改用DTK方式启动文管，避免AM给文管套终端的appid,影响主题。
+  * fix: Comment out warning for still-running terminal process
 
- -- Yutao Meng <mengyutao@deepin.org>  Thu, 01 Feb 2024 10:28:53 +0800
+ -- dengzhongyuan <dengzhongyuan@uniontech.com>  Thu, 05 Feb 2026 15:13:16 +0800
 
-deepin-terminal (6.0.10) unstable; urgency=medium
+deepin-terminal (6.5.27) unstable; urgency=medium
 
-  * 调换切换前后标签页快捷键为正确顺序
-    修复雷神窗口无法设置模糊的问题
-    Dirty Fix改为部分刷新光标后的显示问题
-    无法打开未以'/'结尾的带端口号的链接
-    Fix debug logs spaming problem while resizing
+  * fix: update URL regular expression for improved accuracy
+  * fix: remove device pixel ratio scaling in drag pixmap
+  * build(debian): separate Qt5/Qt6 build configurations for V25/V20 support
 
- -- Yutao Meng <mengyutao@deepin.org>  Thu, 25 Jan 2024 11:35:43 +0800
+ -- dengzhongyuan <dengzhongyuan@uniontech.com>  Thu, 05 Feb 2026 13:06:29 +0800
 
-deepin-terminal (6.0.9) unstable; urgency=medium
+deepin-terminal (6.5.26) unstable; urgency=medium
 
-  * Fix abnormal animations of quake window under multi-monitor scenario.
-    Fix wrong title bar previews of dark/light themes in system themes.
+  * update version to 6.5.26.
 
- -- Yutao Meng <mengyutao@deepin.org>  Fri, 03 Nov 2023 10:38:56 +0800
+ -- Tian ShiLin <tianshilin@uniontech.com>  Thu, 22 Jan 2026 17:52:38 +0800
 
-deepin-terminal (6.0.8) unstable; urgency=medium
+deepin-terminal (6.5.25) unstable; urgency=medium
 
-  * Allow extending terminal themes
-    Fix wrong width of Quake window if opened in a secondary screen with
-    different resolution with main screen
+  * chore: Update version to 6.5.25
+  * fix(ui): remove Qt::QueuedConnection from tab event handlers
+  * fix: Addressed terminal lag issues
 
- -- Yutao Meng <mengyutao@deepin.org>  Tue, 17 Oct 2023 10:39:37 +0800
+ -- zhanghongyuan <zhanghongyuan@uniontech.com>  Thu, 15 Jan 2026 17:29:56 +0800
 
-deepin-terminal (6.0.7) unstable; urgency=medium
+deepin-terminal (6.5.24) unstable; urgency=medium
 
-  * Fix compilation errors on deepin V23.
-    Add tips for empty group section in add server dialog.
+  * New version 6.5.24.
+  * fix: Tab Highlighting
+  * fix: keep rename title input width stable when empty
+  * Fix: Options cannot be selected forward when using Shift+Tab.
 
- -- Yutao Meng <mengyutao@deepin.org>  Mon, 28 Aug 2023 15:03:01 +0800
+ -- re2zero <yangwu@uniontech.com>  Sun, 04 Jan 2026 11:05:37 +0800
 
-deepin-terminal (6.0.6) unstable; urgency=medium
+deepin-terminal (6.5.23) unstable; urgency=medium
 
-  * Feature:
-      Optimized remote server functions
-      Update window title according to current tab name
-      New cursor type of bold underline
-      New option to choose which special characters to be included in double
-click selections
-      Change opacity with "Shift+Ctrl+Mouse Wheel"
-    Fix Bugs:
-      Better implementation of enable/disable flow control feature
-      Fix "Desktop Action" sections of desktop entry file to freedesktop standards
-      Blacklist Noto Sans SignWriting fonts
-      Fix compilation error
-      Fix Shift+Tab shortcut is unusable in terminal shells
-      Remove dependencies on dde-daemon WMSwitcher
-      Remove useless desktop environment variable
+  * Update version to 6.5.23.
+  * Merge v20 brach code
 
+ -- liyigang <liyigang1@uniontech.com>  Tue, 19 Dec 2025 14:04:02 +0800
 
- -- Yutao Meng <mengyutao@deepin.org>  Tue, 01 Aug 2023 16:37:36 +0800
+deepin-terminal (6.5.22) unstable; urgency=medium
 
-deepin-terminal (6.0.5) unstable; urgency=medium
+  * chore: Update compiler flags for security enhancements
 
-  * Feature:
-	New setting for customizing history line size
+ -- wangrong <wangrong@uniontech.com>  Tue, 02 Dec 2025 16:40:02 +0800
 
-    Fix Bugs:
-	Quake window animation is extremely slow by default.
-	The translations of "Ctrl+Mouse Scroll" setting entry is missing.
-	Font list in settings is empty on other distributions.
+deepin-terminal (6.5.21) unstable; urgency=medium
 
- -- mengyutao <mengyutao@uniontech.com>  Thu, 16 Mar 2023 09:32:20 +0800
+  * Update version to 6.5.21.
 
-deepin-terminal (6.0.4) unstable; urgency=medium
+ -- Tian ShiLin <tianshilin@uniontech.com>  Fri, 21 Nov 2025 09:28:00 +0800
 
-  * Add option to control the length of Quake window animation (#252)
-    Autohide titlebar on fullscreen mode (#253)
+deepin-terminal (6.5.20) unstable; urgency=medium
 
- -- mengyutao <mengyutao@uniontech.com>  Wed, 22 Feb 2023 15:48:20 +0800
+  * Update version to 6.5.20.
 
-deepin-terminal (6.0.3) unstable; urgency=medium
+ -- Tian ShiLin <tianshilin@uniontech.com>  Fri, 07 Nov 2025 11:29:30 +0800
 
-  * update version
+deepin-terminal (6.5.19) unstable; urgency=medium
 
- -- liuzheng <liuzheng@uniontech.com>  Mon, 16 Jan 2023 16:43:01 +0800
+  * Update version to 6.5.19. 
 
-deepin-terminal (6.0.2) unstable; urgency=medium
+ -- Tian ShiLin <tianshilin@uniontech.com>  Thu, 30 Oct 2025 19:21:17 +0800
 
-  * update version
+deepin-terminal (6.5.18) unstable; urgency=medium
 
- -- liuzheng <liuzheng@uniontech.com>  Mon, 16 Jan 2023 14:39:13 +0800
+  * fix: Thunder God Window Display Abnormal
 
-deepin-terminal (6.0.1) unstable; urgency=medium
+ -- dengzhongyuan <dengzhongyuan@uniontech.com>  Fri, 10 Oct 2025 13:07:55 +0800
 
-  * New version 6.0.1
+deepin-terminal (6.5.17) unstable; urgency=medium
 
- -- hemingyang <hemingyang@uniontech.com>  Wed, 09 Nov 2022 15:22:05 +0800
+  * Update version to 6.5.17.
+
+ -- Tian ShiLin <tianshilin@uniontech.com>  Fri, 19 Sep 2025 10:44:03 +0800
+
+deepin-terminal (6.5.16) unstable; urgency=medium
+
+  * Update version to 6.5.16.
+
+ -- Tian ShiLin <tianshilin@uniontech.com>  Thu, 11 Sep 2025 10:52:57 +0800
+
+deepin-terminal (6.5.15) unstable; urgency=medium
+
+  * Update version to 6.5.15. 
+
+ -- Tian ShiLin <tianshilin@uniontech.com>  Tue, 19 Aug 2025 20:41:33 +0800
+
+deepin-terminal (6.5.14) unstable; urgency=medium
+
+  * chore: Add qt6-tools-dev to Build-Depends in debian/control (#435)
+
+ -- dengzhongyuan <dengzhongyuan@uniontech.com>  Wed, 13 Aug 2025 16:32:43 +0800
+
+deepin-terminal (6.5.13) unstable; urgency=medium
+
+  * Add qt6-tools-dev to Build-Depends in debian/control
+
+ -- dengzhongyuan <dengzhongyuan@uniontech.com>  Fri, 08 Aug 2025 12:45:47 +0800
+
+deepin-terminal (6.5.12) unstable; urgency=medium
+
+  * chore: Update version to 6.5.11
+
+ -- dengzhongyuan <dengzhongyuan@uniontech.com>  Fri, 08 Aug 2025 09:25:55 +0800
+
+deepin-terminal (6.5.11) unstable; urgency=medium
+
+  * chore: Add new Lao translation file
+
+ -- dengzhongyuan <dengzhongyuan@uniontech.com>  Thu, 07 Aug 2025 16:00:06 +0800
+
+deepin-terminal (6.5.10) unstable; urgency=medium
+
+  * chore: Update deepin-manual resources (#428)
+
+ -- dengzhongyuan <dengzhongyuan@uniontech.com>  Thu, 10 Jul 2025 19:02:11 +0800
+
+deepin-terminal (6.5.9) unstable; urgency=medium
+
+  * chore: update translation
+
+ -- xiepengfei <xiepengfei@uniontech.com>  Tue, 01 Jul 2025 19:40:43 +0800
+
+deepin-terminal (6.5.9) unstable; urgency=medium
+
+  * chore(translations): remove deepin-terminal_en_AU.ts file
+
+ -- dengzhongyuan <dengzhongyuan@uniontech.com>  Fri, 27 Jun 2025 17:06:42 +0800
+
+deepin-terminal (6.5.8) unstable; urgency=medium
+
+  * fix(translations): update translations for multiple languages by Ai
+
+ -- dengzhongyuan <dengzhongyuan@uniontech.com>  Mon, 23 Jun 2025 10:53:21 +0800
+
+deepin-terminal (6.5.7) unstable; urgency=medium
+
+  * chore: Update dman's resources
+
+ -- dengzhongyuan <dengzhongyuan@uniontech.com>  Sat, 21 Jun 2025 09:58:19 +0800
+
+deepin-terminal (6.5.6) unstable; urgency=medium
+
+  * fix: replace icon siez 12*12(Bug: 279839)
+
+ -- renbin <renbin@uniontech.com>  Thu, 17 Apr 2025 13:09:47 +0800
+
+deepin-terminal (6.5.5) unstable; urgency=medium
+
+  * fix: replace hover icon (Bug: 279839)
+
+ -- renbin <renbin@uniontech.com>  Thu, 10 Apr 2025 19:06:38 +0800
+
+deepin-terminal (6.5.4) unstable; urgency=medium
+
+  * New version 6.5.4.
+
+ -- Wang Yu <wangyu@uniontch.com>  Thu, 27 Mar 2025 13:58:35 +0800
+
+deepin-terminal (6.5.3) unstable; urgency=medium
+
+  * refactor: upgrade Qt and DTK compatibility (#402)
+
+ -- renbin <renbin@uniontech.com>  Thu, 20 Mar 2025 19:01:38 +0800
+
+deepin-terminal (6.5.2) unstable; urgency=medium
+
+  * New version 6.5.2.
+
+ -- Wang Yu <wangyu@uniontch.com>  Thu, 06 Mar 2025 19:41:49 +0800
+
+deepin-terminal (6.5.1) unstable; urgency=medium
+
+  * fix: crash when open remote manage(Bug: 303369)
+
+ -- renbin <renbin@uniontech.com>  Mon, 17 Feb 2025 14:52:07 +0800
+
+deepin-terminal (6.5.0) unstable; urgency=medium
+
+  * New version 6.5.0.
+
+-- re2zero <yangwu@uniontech.com>  Mon, 20 Jan 2025 15:30:43 +0800
+
+deepin-terminal (5.9.51) unstable; urgency=medium
+
+  * New version 5.9.51.
+
+ -- xiepengfei <xiepengfei@uniontech.com>  Sat, 14 Dec 2024 14:23:55 +0800
+
+deepin-terminal (5.9.50) unstable; urgency=medium
+
+  * New version 5.9.50.
+
+ -- xiepengfei <xiepengfei@uniontech.com>  Sat, 30 Nov 2024 13:13:27 +0800
+
+deepin-terminal (5.9.49) unstable; urgency=medium
+
+  * New version 5.9.49.
+
+ -- wangcong <wangcong@uniontech.com>  Mon, 15 Jan 2024 21:18:00 +0800
+
+deepin-terminal (5.9.48) unstable; urgency=medium
+
+  * fix: Changes the default value of the debug mode configuration file.
+  * fix: Crash when show/close setting dialog.
+    (#325) (Bug: 28636)
+  * feat: Debug mode log adaptation
+
+ -- wangcong <wangcong@uniontech.com>  Tue, 9 Jan 2024 21:18:00 +0800
+
+deepin-terminal (5.9.47) unstable; urgency=medium
+
+  * fix: Fixed the issue of high CPU usage due to cursor flickering. 
+    (#317) (Bug: 231445)
+  * Revert "fix: Supplementary 2 character width character set (#284)". 
+    (#321) (Bug: 272385)
+
+ -- renbin <renbin@uniontech.com>  Mon, 25 Dec 2023 15:54:39 +0800
+
+deepin-terminal (5.9.46) unstable; urgency=medium
+
+  * fix: Roll back gb18030 midification.
+
+ -- renbin <renbin@uniontech.com>  Fri, 03 Nov 2023 10:55:01 +0800
+
+deepin-terminal (5.9.45) unstable; urgency=medium
+
+  * fix: Tab height error under low version dtk.
+
+ -- renbin <renbin@uniontech.com>  Wed, 25 Oct 2023 13:31:59 +0800
+
+deepin-terminal (5.9.44) unstable; urgency=medium
+
+  * fix: Add 2 character width charset.
+  * feat: Improve debug log and add log category. 
+  * feat: [UI] Adapt compact mode.(Task: 292067)(Influence: UI)
+
+ -- renbin <renbin@uniontech.com>  Mon, 16 Oct 2023 15:54:30 +0800
+
+deepin-terminal (5.9.43) unstable; urgency=medium
+
+  * New version 5.9.43.
+
+ -- muyuankai <muyuankai@uniontech.com>  Fri, 16 Jun 2023 15:48:31 +0800
+
+deepin-terminal (5.9.42) unstable; urgency=medium
+
+  * New version 5.9.42
+  * 
+
+ -- muyuankai <muyuankai@uniontech.com>  Thu, 13 Apr 2023 15:20:11 +0800
 
 deepin-terminal (5.9.40) unstable; urgency=medium
 

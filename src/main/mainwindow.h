@@ -13,6 +13,7 @@
 #include "utils.h"
 #include "define.h"
 #include "customthemesettingdialog.h"
+#include "qtcompat.h"
 
 // dtk
 #include <DMainWindow>
@@ -30,9 +31,11 @@
 #include <QMenu>
 #include <QDebug>
 #include <QShortcut>
-#include <QMap>
-#include <QActionGroup>
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #include <QtX11Extras/QX11Info>
+#else
+#include <QtGui/private/qtx11extras_p.h>
+#endif
 
 #include <functional>
 
@@ -45,9 +48,52 @@ class TermProperties;
 class ShortcutManager;
 class MainWindowPluginInterface;
 class CustomCommandPlugin;
-class SwitchThemeMenu;
+class QShowEvent;
 
 
+/*******************************************************************************
+ 1. @类名:    SwitchThemeMenu
+ 2. @作者:    ut000125 sunchengxi
+ 3. @日期:    2020-10-28
+ 4. @说明:    主题菜单的快捷键项在鼠标离开悬浮时，触发主题还原
+*******************************************************************************/
+class SwitchThemeMenu : public QMenu
+{
+    Q_OBJECT
+public:
+    SwitchThemeMenu(const QString &title, QWidget *parent = nullptr);
+    /**
+     * @brief 捕获鼠标离开主题项事件
+     * @author ut000125 sunchengxi
+     */
+    void leaveEvent(QEvent *) override;
+    /**
+     * @brief 主题菜单栏隐藏时触发
+     * @author ut000125 sunchengxi
+     */
+    void hideEvent(QHideEvent *) override;
+    /**
+     * @brief 捕获鼠标进入主题项事件
+     * @author ut000125 sunchengxi
+     * @param event 鼠标进入主题项事件
+     */
+    void enterEvent(EnterEvent *event) override;
+    /**
+     * @brief 处理键盘主题项左键按下离开事件
+     * @author ut000125 sunchengxi
+     * @param event 键盘主题项左键按下离开事件
+     */
+    void keyPressEvent(QKeyEvent *event) override;
+
+signals:
+    //主题项在鼠标停靠离开时触发的信号
+    void mainWindowCheckThemeItemSignal();
+    //主题菜单隐藏时设置主题信号
+    void menuHideSetThemeSignal();
+public:
+    //鼠标悬殊主题记录，防止频繁刷新，鼠标再次进入主题列表负责刷新预览
+    QString hoveredThemeStr = "";
+};
 
 
 /*******************************************************************************
@@ -465,10 +511,8 @@ protected:
      * @author ut000125 sunchengxi
      */
     void addThemeMenuItems();
-
     /**
-     * @brief 根据配置添加选项
-     * @author ut000610 daizhengwen
+     * @brief 根据可用配色方案动态添加主题项
      */
     void addThemeFromConfig();
 public:
@@ -738,6 +782,11 @@ protected:
      */
     inline void updateWindowTitle();
 
+    /**
+     * @brief 根据当前标签页标题更新窗口名
+     */
+    inline void updateWindowTitle();
+
 protected:
     // 初始化标题栏
     virtual void initTitleBar() = 0;
@@ -821,6 +870,9 @@ public:
     //自定义主题快捷键
     QAction        *themeCustomAction      = nullptr;
 
+    // 动态内置主题快捷键（由配置扫描生成）
+    QMap<QString, QAction *> themeBuiltinActionMap;
+
     //主题快捷键组
     QActionGroup    *group                  = nullptr;
 
@@ -856,6 +908,10 @@ public:
     virtual void updateMinHeight() override {return;}
 
 protected:
+    /**
+     * @brief 普通窗口显示事件：窗口首次显示时将焦点设置回终端输入区
+     */
+    void showEvent(QShowEvent *event) override;
     /**
      * @brief 普通终端窗口初始化标题栏
      * @author ut001121 zhangmeng

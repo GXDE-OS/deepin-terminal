@@ -13,6 +13,13 @@
 #include <QLabel>
 #include <QDebug>
 #include <QMouseEvent>
+#include <QLoggingCategory>
+
+Q_DECLARE_LOGGING_CATEGORY(views)
+
+#ifdef DTKWIDGET_CLASS_DSizeMode
+#include <DSizeMode>
+#endif
 
 #ifdef DTKWIDGET_CLASS_DSizeMode
 #include <DSizeMode>
@@ -25,6 +32,7 @@ DWIDGET_USE_NAMESPACE
 
 TitleBar::TitleBar(QWidget *parent) : QWidget(parent), m_layout(new QHBoxLayout(this))
 {
+    qCDebug(views) << "Enter TitleBar::TitleBar";
     Utils::set_Object_Name(this);
     m_layout->setObjectName("TitleBarLayout");//Add by ut001000 renfeixiang 2020-08-13
     /******** Modify by m000714 daizhengwen 2020-04-15: 标签栏和Dtk标签色保持一致****************/
@@ -49,10 +57,12 @@ TitleBar::TitleBar(QWidget *parent) : QWidget(parent), m_layout(new QHBoxLayout(
 
 TitleBar::~TitleBar()
 {
+    qCDebug(views) << "Enter TitleBar::~TitleBar";
 }
 
 void TitleBar::setTabBar(QWidget *widget)
 {
+    // qCDebug(views) << "Enter TitleBar::setTabBar";
     /******** Modify by n014361 wangpeili 2020-02-12: 修改居中样式***********×****/
     m_layout->addWidget(widget, 0, Qt::AlignVCenter);
     /***************** Modify by n014361 End ********************×****/
@@ -60,11 +70,13 @@ void TitleBar::setTabBar(QWidget *widget)
 
 int TitleBar::rightSpace()
 {
+    // qCDebug(views) << "Enter TitleBar::rightSpace";
     return m_rightSpace;
 }
 
 void TitleBar::setVerResized(bool resized)
 {
+    // qCDebug(views) << "Enter TitleBar::setVerResized with resized:" << resized;
     setMouseTracking(true);
     m_verResizedEnabled = resized;
 }
@@ -72,8 +84,10 @@ void TitleBar::setVerResized(bool resized)
 
 void TitleBar::mousePressEvent(QMouseEvent *event)
 {
+    // qCDebug(views) << "Enter TitleBar::mousePressEvent";
     QWidget *w = this->window();
     if(w) {
+        // qCDebug(views) << "Branch: Parent window found, calculating mouse position";
         int windowMouseY = this->mapTo(w, event->pos()).y();
         int windowMouseYOff = w->height() - windowMouseY;
         m_verResizedCurOff = windowMouseYOff;
@@ -83,26 +97,39 @@ void TitleBar::mousePressEvent(QMouseEvent *event)
 
 void TitleBar::mouseMoveEvent(QMouseEvent *event)
 {
+    // qCDebug(views) << "Enter TitleBar::mouseMoveEvent";
     forever {
+        // qCDebug(views) << "Branch: Getting parent window";
         QWidget *w = this->window();
-        if(!w)
+        if(!w) {
+            qCDebug(views) << "No parent window found";
             break;
-        if(!m_verResizedEnabled)
+        }
+        if(!m_verResizedEnabled) {
+            qCDebug(views) << "Vertical resize disabled";
             break;
-        if(!this->hasMouseTracking())
+        }
+        if(!this->hasMouseTracking()) {
+            qCDebug(views) << "Mouse tracking disabled";
             break;
+        }
         int windowMouseY = this->mapTo(w, event->pos()).y();
         int windowMouseYOff = w->height() - windowMouseY;
         if(event->buttons() != Qt::LeftButton && windowMouseYOff < VER_RESIZED_ALLOWED_OFF) {
+            // qCDebug(views) << "Branch: Setting size cursor for vertical resize";
             this->setCursor(Qt::SizeVerCursor);
             break;
         }
+        
         if(event->buttons() == Qt::LeftButton && m_verResizedCurOff < VER_RESIZED_ALLOWED_OFF) {
+            // qCDebug(views) << "Branch: Performing window resize";
             w->resize(w->width(), qMax(VER_RESIZED_MIN_HEIGHT, windowMouseY + m_verResizedCurOff));
             break;
         }
+        // qCDebug(views) << "Branch: Setting arrow cursor";
         this->setCursor(Qt::ArrowCursor);
         break;
     }
+    // qCDebug(views) << "Branch: Calling parent mouse move event";
     QWidget::mouseMoveEvent(event);
 }

@@ -16,7 +16,7 @@
 #include "serverconfigmanager.h"
 
 #include <DAbstractDialog>
-#include <DApplicationHelper>
+#include <DGuiApplicationHelper>
 #include <DButtonBox>
 #include <DComboBox>
 #include <DCommandLinkButton>
@@ -31,6 +31,8 @@
 #include <DAlertControl>
 #include <dfilechooseredit.h>
 #include <DVerticalLine>
+#include <DWidget>
+#include <DScrollArea>
 
 #include <QAction>
 
@@ -135,6 +137,8 @@ private:
     bool m_bDelOpt = false;
     QGridLayout *m_pGridLayout = nullptr;
     DVerticalLine *m_bottomVLine = nullptr;
+    DCommandLinkButton *m_advancedOptions = nullptr;
+    TermCommandLinkButton *m_delServer = nullptr;
 
     /**
      * @brief 服务器配置选项初始化UI界面
@@ -172,6 +176,12 @@ private:
      * @author m000714 戴正文
      */
     inline void setLabelStyle(DLabel *);
+    
+    /**
+     * @brief 设置高级选项区域可见性
+     * @param isVisible 是否可见
+     */
+    void setAdvanceRegionVisible(bool isVisible);
 };
 
 #endif  // SERVERCONFIGOPTDLG_H

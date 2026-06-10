@@ -440,7 +440,7 @@ void Screen::resizeImage(int new_lines, int new_columns)
             histLine.resize(histLineLen);
             _history->getCells(histPos, 0, histLineLen, histLine.data());
             _screenLines.insert(0, histLine);
-            _lineProperties.insert(0, lineProperty);
+            _lineProperties.insert(_lineProperties.begin(), lineProperty);
             _history->removeCells();
             cursorLine++;
         }
@@ -830,7 +830,21 @@ void Screen::displayCharacter(uint c)
         w--;
     }
     _cuX = newCursorX;
-    _escapeSequenceUrlExtractor->appendUrlText(QChar(c));
+
+    if (c <= 0xFFFF) {
+        _escapeSequenceUrlExtractor->appendUrlText(QChar(static_cast<ushort>(c)));
+    } else {
+        // 对于超过 0xFFFF 的字符，需要拆分为高代理和低代理
+        // 注意：如果 appendUrlText 逻辑依赖于“一个调用代表一个完整字符”，
+        // 这里分两次调用可能会破坏其内部逻辑（如 URL 提取）。
+        // 最好的办法依然是修改 appendUrlText 接受 QString。
+        QChar high = QChar::highSurrogate(c);
+        QChar low = QChar::lowSurrogate(c);
+
+        // 尝试连续调用，但这取决于 appendUrlText 的具体实现
+        _escapeSequenceUrlExtractor->appendUrlText(high);
+        _escapeSequenceUrlExtractor->appendUrlText(low);
+    }
 }
 
 void Screen::compose(const QString& /*compose*/)
@@ -1379,7 +1393,13 @@ Character *Screen::getCharacterBuffer(const int size)
     static QVector<Character> characterBuffer(MAX_CHARS);
 
     if (characterBuffer.count() < size) {
-        characterBuffer.resize(size);
+      int oldSize = characterBuffer.count();
+      characterBuffer.resize(size);
+      if (characterBuffer.count() < size) {
+        qCritical() << "Screen: Failed to resize character buffer to size:"
+                    << size << "characters," << size * sizeof(Character)
+                    << "bytes (current size:" << characterBuffer.count() << ")";
+      }
     }
 
     return characterBuffer.data();
@@ -1448,13 +1468,17 @@ int Screen::copyLineToStream(int line ,
         }
 
         //retrieve line from screen image
-        auto end = qMin(start + count, length);
-        if (start < end) {
-            std::copy(data + start, data + end, characterBuffer);
+        // If selection starts beyond current line length, nothing to copy
+        if (start >= length) {
+            count = 0;
+        } else {
+            auto end = qMin(start + count, length);
+            if (start < end) {
+                std::copy(data + start, data + end, characterBuffer);
+            }
+            // count cannot be any greater than available length from start
+            count = qBound(0, count, length - start);
         }
-
-        // count cannot be any greater than length
-        count = qBound(0, count, length - start);
 
         Q_ASSERT(screenLine < _lineProperties.count());
         currentLineProperties |= _lineProperties[screenLine];

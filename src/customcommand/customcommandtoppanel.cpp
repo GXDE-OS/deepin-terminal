@@ -14,6 +14,8 @@
 #include <QPropertyAnimation>
 #include <QParallelAnimationGroup>
 
+Q_DECLARE_LOGGING_CATEGORY(customcommand)
+
 const int iAnimationDuration = 300;
 
 CustomCommandTopPanel::CustomCommandTopPanel(QWidget *parent)
@@ -21,6 +23,7 @@ CustomCommandTopPanel::CustomCommandTopPanel(QWidget *parent)
       m_customCommandPanel(new CustomCommandPanel(this)),
       m_customCommandSearchPanel(new CustomCommandSearchRstPanel(this))
 {
+    qCDebug(customcommand) << "Creating CustomCommandTopPanel";
     /******** Add by ut001000 renfeixiang 2020-08-14:增加 Begin***************/
     Utils::set_Object_Name(this);
     m_customCommandPanel->setObjectName("CustomCommandPanel");
@@ -50,6 +53,7 @@ CustomCommandTopPanel::CustomCommandTopPanel(QWidget *parent)
 
 void CustomCommandTopPanel::showCustomCommandPanel()
 {
+    qCDebug(customcommand) << "Showing custom command panel";
     m_customCommandPanel->resize(size());
     m_customCommandPanel->refreshCmdPanel();
     m_customCommandPanel->show();
@@ -61,7 +65,7 @@ void CustomCommandTopPanel::showCustomCommandPanel()
     if (main != nullptr) {
         if (main->isFocusOnList()) {
             m_customCommandPanel->setFocusInPanel();
-            qInfo() << "custom command panel has focus";
+            qCWarning(customcommand) << "custom command panel has focus";
         }
     }
 
@@ -91,6 +95,7 @@ void CustomCommandTopPanel::showCustomCommandPanel()
 
 void CustomCommandTopPanel::showCustomCommandSearchPanel(const QString &strFilter)
 {
+    qCDebug(customcommand) << "Showing custom command search panel with filter:" << strFilter;
     m_customCommandSearchPanel->refreshData(strFilter);
     m_customCommandSearchPanel->show();
     m_customCommandSearchPanel->m_backButton->setFocus();//m_customCommandSearchPanel->setFocus();
@@ -121,6 +126,7 @@ void CustomCommandTopPanel::showCustomCommandSearchPanel(const QString &strFilte
 
 void CustomCommandTopPanel::show(bool bSetFocus)
 {
+    qCDebug(customcommand) << "Showing top panel with focus:" << bSetFocus;
     this->showAnim();
     m_customCommandPanel->resize(size());
     m_customCommandPanel->move(0, 0);
@@ -130,11 +136,11 @@ void CustomCommandTopPanel::show(bool bSetFocus)
     m_customCommandSearchPanel->hide();
     m_bSetFocus = bSetFocus;
     if (m_bSetFocus) {
-        qInfo() << "Focus is in Custom panel";
+        qCInfo(customcommand) << "Focus is in Custom panel";
         // 将焦点设置在平面上
         m_customCommandPanel->setFocusInPanel();
     } else {
-        qInfo() << "Focus is in Current page";
+        qCInfo(customcommand) << "Focus is in Current page";
         // 将焦点落回终端
         MainWindow *w = Utils::getMainWindow(this);
         if(w)
@@ -145,6 +151,7 @@ void CustomCommandTopPanel::show(bool bSetFocus)
 
 void CustomCommandTopPanel::slotsRefreshCommandPanel()
 {
+    qCDebug(customcommand) << "Refreshing command panel";
     m_customCommandPanel->resize(size());
     //m_customCommandPanel->show();
     m_customCommandPanel->refreshCmdPanel();

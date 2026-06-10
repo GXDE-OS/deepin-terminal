@@ -10,6 +10,10 @@
 
 // qt
 #include <QDebug>
+#include <QLoggingCategory>
+#include <QTranslator>
+
+Q_DECLARE_LOGGING_CATEGORY(mainprocess)
 
 #ifdef QT_DEBUG
 #include <QTranslator>
@@ -17,13 +21,17 @@
 
 TerminalApplication::TerminalApplication(int &argc, char *argv[]) : DApplication(argc, argv)
 {
+    qCDebug(mainprocess) << "TerminalApplication constructing with arguments:" << QCoreApplication::arguments();
     Utils::set_Object_Name(this);
+    qCDebug(mainprocess) << "Loading translations";
     loadTranslator();
     setOrganizationName("deepin");
     setApplicationVersion(VERSION);
     setApplicationName("deepin-terminal");
     setApplicationDisplayName(QObject::tr("Terminal"));
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     setAttribute(Qt::AA_UseHighDpiPixmaps, true);
+#endif
     setProductIcon(QIcon::fromTheme("deepin-terminal"));
     QString appDesc = QObject::tr("Terminal is an advanced terminal emulator with workspace"
                                   ", multiple windows, remote management, quake mode and other features.");
@@ -41,47 +49,57 @@ TerminalApplication::TerminalApplication(int &argc, char *argv[]) : DApplication
 
 TerminalApplication::~TerminalApplication()
 {
+    qCDebug(mainprocess) << "TerminalApplication destructing";
     Service::releaseInstance();
     Settings::releaseInstance();
+    qCInfo(mainprocess) << "Application resources released";
 }
 
 void TerminalApplication::setStartTime(qint64 time)
 {
+    qCDebug(mainprocess) << "Setting application start time:" << time;
     m_AppStartTime = time;
 }
 
 qint64 TerminalApplication::getStartTime()
 {
+    // qCDebug(mainprocess) << "Enter TerminalApplication::getStartTime";
     return m_AppStartTime;
 }
 
 void TerminalApplication::handleQuitAction()
 {
-    qInfo() << "handleQuitAction";
+    qCInfo(mainprocess) << "Handle quit action";
     activeWindow()->close();
 }
 
 
 bool TerminalApplication::notify(QObject *object, QEvent *event)
 {
+    qCDebug(mainprocess) << "Processing event:" << event->type() << "for object:" << object;
     //修复bug#110813
     if (event->type() == QEvent::ApplicationFontChange) {
+        qCDebug(mainprocess) << "Branch: handling application font change";
         // ApplicationFontChange 调用 font() 是 ok 的，如果在 fontChanged 中调用在某些版本中会出现 deadlock
         DFontSizeManager::instance()->setFontGenericPixelSize(static_cast<quint16>(DFontSizeManager::fontPixelSize(font())));
     }
 
     // 针对DTK做的特殊处理,等DTK自己完成后,需要删除
     if (QStringLiteral("Dtk::Widget::DKeySequenceEdit") == object->metaObject()->className()) {
+        qCDebug(mainprocess) << "Branch: handling DKeySequenceEdit";
         // 焦点移除,移除edit
         if (QEvent::FocusOut == event->type()) {
+            qCDebug(mainprocess) << "Branch: focus out event";
             DKeySequenceEdit *edit = static_cast<DKeySequenceEdit *>(object);
             // 包含edit
             if (m_keySequenceList.contains(edit)) {
+                qCDebug(mainprocess) << "Branch: removing edit from list";
                 m_keySequenceList.removeOne(edit);
-                qInfo() << "remove editing when foucs out";
+                qCInfo(mainprocess)  << "remove editing when foucs out";
             }
         }
         if (QEvent::KeyPress == event->type()) {
+            qCDebug(mainprocess) << "Branch: key press event";
             QKeyEvent *keyevent = static_cast<QKeyEvent *>(event);
             // 获取DKeySequenceEdit
             DKeySequenceEdit *edit = static_cast<DKeySequenceEdit *>(object);
@@ -90,6 +108,7 @@ bool TerminalApplication::notify(QObject *object, QEvent *event)
                     || Qt::Key_Return == keyevent->key()
                     || Qt::Key_Space == keyevent->key()
                ) {
+                qCDebug(mainprocess) << "Branch: Enter/Return/Space key pressed";
                 // 当快捷键输入框内容不为空
                 // 设置里的快捷键输入框
                 if (!edit->keySequence().isEmpty()
@@ -101,7 +120,7 @@ bool TerminalApplication::notify(QObject *object, QEvent *event)
                     QMouseEvent mouseEvent(QEvent::MouseButtonPress, QPoint(0, 0), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
                     QApplication::sendEvent(childern[0], &mouseEvent);
                     // 记录当前KeySequence已经进入编辑状态
-                    qInfo() << "KeySequence in Editing";
+                    qCInfo(mainprocess)  << "KeySequence in Editing";
                     m_keySequenceList.append(edit);
                     return true;
                 }
@@ -110,7 +129,7 @@ bool TerminalApplication::notify(QObject *object, QEvent *event)
             if (m_keySequenceList.contains(edit)) {
                 // 其他情况的按键，移除edit
                 m_keySequenceList.removeOne(edit);
-                qInfo() << "remove editing when others";
+                qCInfo(mainprocess)  << "remove editing when others";
             }
         }
     }
@@ -118,6 +137,7 @@ bool TerminalApplication::notify(QObject *object, QEvent *event)
     // ALT+M = 右键
     if (QEvent::KeyPress == event->type()) {
         QKeyEvent *keyevent = static_cast<QKeyEvent *>(event);
+        qCDebug(mainprocess) << "Key press event:" << keyevent->key() << "modifiers:" << keyevent->modifiers();
         /***add begin by ut001121 zhangmeng 20200801 截获DPushButton控件回车按键事件并模拟空格键点击事件,用以解决回车键不响应的问题***/
         // 回车键
         // 恢复默认 添健按钮
@@ -155,7 +175,6 @@ bool TerminalApplication::notify(QObject *object, QEvent *event)
             /***add begin by ut001121 zhangmeng 20200825 模拟发送ContextMenu事件 修复BUG44282***/
             QPoint pos;
             QContextMenuEvent menuEvent(QContextMenuEvent::Keyboard, pos);
-            qInfo() << "------------" << menuEvent.type();
             QApplication::sendEvent(object, &menuEvent);
             /***add end by ut001121***/
 
@@ -168,7 +187,6 @@ bool TerminalApplication::notify(QObject *object, QEvent *event)
 #if 0
     // 快捷键检测
     bool spont = event->spontaneous();
-    //qInfo() <<event->type()<< spont<<classname;
     QString classname = object->metaObject()->className();
     if ((event->type() == QEvent::KeyPress || event->type() == QEvent::Shortcut)
             /*&& QString(object->metaObject()->className()) == "MainWindow"*/) {
@@ -181,7 +199,6 @@ bool TerminalApplication::notify(QObject *object, QEvent *event)
             if (event->type() == QEvent::Shortcut) {
                 QShortcutEvent *sevent = static_cast<QShortcutEvent *>(event);
                 keyString = QKeySequence(sevent->key()).toString(QKeySequence::PortableText);
-                // qInfo()<<"Shortcut"<<sevent->key();
             }
 
         int uKey = keyevent->key();
@@ -204,8 +221,6 @@ bool TerminalApplication::notify(QObject *object, QEvent *event)
             uKey += Qt::ALT;
 
         QString keyString2 = QKeySequence(uKey).toString(QKeySequence::PortableText);
-        qInfo() << keyevent->type() << keyString2 << keyString << object << keyevent->spontaneous() << classname << keyevent->key()
-                << keyevent->nativeScanCode() << keyevent->nativeVirtualKey() << keyevent->nativeModifiers();
 
     }
 #endif
@@ -214,7 +229,7 @@ bool TerminalApplication::notify(QObject *object, QEvent *event)
 #if 0
     // 焦点检测
     if (event->type() == QEvent::FocusIn)
-        qInfo() << "FocusIn:" << object;
+        qCInfo(mainprocess)  << "FocusIn:" << object;
 
 #endif
 
@@ -223,11 +238,14 @@ bool TerminalApplication::notify(QObject *object, QEvent *event)
 
 void TerminalApplication::pressSpace(QObject *obj)
 {
+    qCDebug(mainprocess) << "Enter TerminalApplication::pressSpace";
+    qCDebug(mainprocess) << "Simulating space key press for object:" << obj;
     // 模拟空格键按下事件
     QKeyEvent pressSpace(QEvent::KeyPress, Qt::Key_Space, Qt::NoModifier, " ");
     QApplication::sendEvent(obj, &pressSpace);
     // 设置定时
     QTimer::singleShot(80, this, [obj]() {
+        qCDebug(mainprocess) << "Lambda: simulating space key release";
         // 模拟空格键松开事件
         QKeyEvent releaseSpace(QEvent::KeyRelease, Qt::Key_Space, Qt::NoModifier, " ");
         QApplication::sendEvent(obj, &releaseSpace);

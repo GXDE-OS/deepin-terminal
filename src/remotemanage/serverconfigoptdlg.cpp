@@ -12,7 +12,6 @@
 #include <DFontSizeManager>
 #include <DPushButton>
 #include <DSuggestButton>
-#include <DApplicationHelper>
 #include <DGuiApplicationHelper>
 #include <DPaletteHelper>
 #include <DFileDialog>
@@ -27,11 +26,12 @@
 #include <QSpacerItem>
 #include <QTimer>
 #include <QDebug>
-
+#include <QLoggingCategory>
 //c++
 #include <iterator>//added byq qinyaning
 
 DGUI_USE_NAMESPACE
+Q_DECLARE_LOGGING_CATEGORY(remotemanage)
 
 ServerConfigOptDlg::ServerConfigOptDlg(ServerConfigOptType type, ServerConfig *curServer, QWidget *parent)
     : DAbstractDialog(true, parent),
@@ -53,8 +53,11 @@ ServerConfigOptDlg::ServerConfigOptDlg(ServerConfigOptType type, ServerConfig *c
       m_coding(new DComboBox(this)),
       m_backSapceKey(new DComboBox(this)),
       m_deleteKey(new DComboBox(this)),
-      m_pGridLayout(new QGridLayout)
+      m_pGridLayout(new QGridLayout),
+      m_advancedOptions(new DCommandLinkButton(tr("Advanced options"), this)),
+      m_delServer(new TermCommandLinkButton(this))
 {
+    // qDebug() << "Enter ServerConfigOptDlg::ServerConfigOptDlg";
     /******** Add by ut001000 renfeixiang 2020-08-13:增加 Begin***************/
     Utils::set_Object_Name(this);
     m_titleLabel->setObjectName("RemoteTitleLabel");
@@ -72,6 +75,8 @@ ServerConfigOptDlg::ServerConfigOptDlg(ServerConfigOptType type, ServerConfig *c
     m_coding->setObjectName("RemoteEncodeComboBox");
     m_backSapceKey->setObjectName("RemoteBackSapceKeyComboBox");
     m_deleteKey->setObjectName("RemoteDeleteKeyComboBox");
+    m_advancedOptions->setObjectName("RemoteAdvancedOptionsButton");
+    m_delServer->setObjectName("RemoteDelServerButton");
     /******** Add by ut001000 renfeixiang 2020-08-13:增加 End***************/
     setWindowModality(Qt::WindowModal);
     setAutoFillBackground(true);
@@ -81,6 +86,7 @@ ServerConfigOptDlg::ServerConfigOptDlg(ServerConfigOptType type, ServerConfig *c
 
 void ServerConfigOptDlg::initUI()
 {
+    qCDebug(remotemanage) << "Enter initUI";
     //all layout
     QVBoxLayout *m_VBoxLayout = new QVBoxLayout();
     m_VBoxLayout->setSpacing(SPACEHEIGHT);
@@ -100,10 +106,13 @@ void ServerConfigOptDlg::initUI()
     // 字色
     DPalette palette = m_titleLabel->palette();
     QColor color;
-    if (DGuiApplicationHelper::DarkType == DGuiApplicationHelper::instance()->themeType())
+    if (DGuiApplicationHelper::DarkType == DGuiApplicationHelper::instance()->themeType()) {
+        qCDebug(remotemanage) << "dark theme type";
         color = QColor::fromRgb(192, 198, 212, 255);
-    else
+    } else {
+        qCDebug(remotemanage) << "light theme type";
         color = QColor::fromRgb(0, 26, 46, 255);
+    }
 
     palette.setBrush(QPalette::WindowText, color);
     m_titleLabel->setPalette(palette);
@@ -116,6 +125,7 @@ void ServerConfigOptDlg::initUI()
     headLayout->addWidget(m_titleLabel, 0, Qt::AlignHCenter);
     headLayout->addWidget(m_closeButton, 0, Qt::AlignRight | Qt::AlignTop);
     connect(m_closeButton, &DDialogCloseButton::clicked, this, [ = ]() {
+        qDebug() << "Lambda: close button clicked";
         reject();
     });
     m_VBoxLayout->addLayout(headLayout);
@@ -128,6 +138,7 @@ void ServerConfigOptDlg::initUI()
     setLabelStyle(pServerNameLabel);
     m_serverName->lineEdit()->setPlaceholderText(tr("Required"));
     QTimer::singleShot(30, this, [&]() {
+        qDebug() << "Lambda: select all server name text";
         m_serverName->lineEdit()->selectAll();
     });
     m_pGridLayout->addWidget(pServerNameLabel, 0, 0);
@@ -182,6 +193,14 @@ void ServerConfigOptDlg::initUI()
     m_pGridLayout->addWidget(pPrivateKeyLabel, 4, 0);
     m_pGridLayout->addWidget(m_privateKey, 4, 1, 1, 3);
 
+    //m_advancedOptions
+    palette = DPaletteHelper::instance()->palette(m_advancedOptions);
+    palette.setColor(DPalette::ButtonText, palette.color(DPalette::Highlight));
+    m_advancedOptions->setPalette(palette);
+    m_advancedOptions->setFocusPolicy(Qt::TabFocus);
+    m_pGridLayout->addWidget(m_advancedOptions, 5, 0, 1, 4, Qt::AlignCenter);
+
+    //senior layout
     DLabel *pGroupLabel = new DLabel(tr("Group:"));
     setLabelStyle(pGroupLabel);
     m_pGridLayout->addWidget(pGroupLabel, 6, 0);
@@ -218,6 +237,22 @@ void ServerConfigOptDlg::initUI()
     setLabelStyle(pDeleteKeyLabel);
     m_pGridLayout->addWidget(pDeleteKeyLabel, 11, 0);
     m_pGridLayout->addWidget(m_deleteKey, 11, 1, 1, 3);
+
+    //m_delServer
+    m_delServer->setText(tr("Delete server"));
+    m_pGridLayout->addWidget(m_delServer, 12, 0, 1, 4, Qt::AlignCenter);
+
+    m_VBoxLayout->addLayout(m_pGridLayout, 1);
+
+    //hide after m_advancedOptions
+    setAdvanceRegionVisible(false);
+
+    DFontSizeManager::instance()->bind(m_advancedOptions, DFontSizeManager::T8, QFont::Normal);
+    connect(m_advancedOptions, &DCommandLinkButton::clicked, this, [ = ]() {
+        qDebug() << "Lambda: advanced options clicked";
+        setAdvanceRegionVisible(true);
+
+    });
     m_VBoxLayout->addLayout(m_pGridLayout);
 
     DPushButton *pCancelButton = new DPushButton(tr("Cancel", "button"));
@@ -225,6 +260,7 @@ void ServerConfigOptDlg::initUI()
     //Add a line by m000750 zhangmeng 2020-04-22设置回车触发默认按钮
     pAddSaveButton->setDefault(true);
     if (SCT_MODIFY == m_type) {
+        qCDebug(remotemanage) << "modify server type";
         m_titleLabel->setText(tr("Edit Server"));
         pAddSaveButton->setText(tr("Save", "button"));
     }
@@ -246,9 +282,15 @@ void ServerConfigOptDlg::initUI()
     setLayout(m_VBoxLayout);
 
     connect(pCancelButton, &DPushButton::clicked, this, [ = ]() {
+        qDebug() << "Lambda: cancel button clicked";
         reject();
     });
     connect(pAddSaveButton, &DPushButton::clicked, this, &ServerConfigOptDlg::slotAddSaveButtonClicked);
+    connect(m_delServer, &TermCommandLinkButton::clicked, this, [ = ]() {
+        qDebug() << "Lambda: delete server clicked";
+        setDelServer(true);
+        accept();
+    });
     // 字体颜色随主题变化变化
     connect(DGuiApplicationHelper::instance(), &DGuiApplicationHelper::themeTypeChanged, this, &ServerConfigOptDlg::handleThemeTypeChanged);
 
@@ -260,25 +302,37 @@ void ServerConfigOptDlg::initUI()
     connect(DGuiApplicationHelper::instance(), &DGuiApplicationHelper::sizeModeChanged, this, &ServerConfigOptDlg::updateSizeMode);
     // 仅在紧凑模式下处理，此模式下调整字体大小可能导致布局间距存在差异。
     connect(DGuiApplicationHelper::instance(), &DGuiApplicationHelper::fontChanged, this, [this](){
+        qDebug() << "Lambda: font changed";
         if (DGuiApplicationHelper::isCompactMode()) {
+            qCDebug(remotemanage) << "compact mode font change";
             QTimer::singleShot(0, this, [=](){ resize(SETTING_DIALOG_WIDTH, sizeHint().height()); });
         }
     });
 #endif
+    qCDebug(remotemanage) << "Exit initUI";
 }
 
 inline void ServerConfigOptDlg::handleThemeTypeChanged(DGuiApplicationHelper::ColorType themeType)
 {
+    // qDebug() << "Enter ServerConfigOptDlg::handleThemeTypeChanged";
     DPalette palette = m_titleLabel->palette();
     //palette.setBrush(QPalette::WindowText, palette.color(DPalette::TextTitle));
     QColor color;
-    if (DGuiApplicationHelper::DarkType == themeType)
+    if (DGuiApplicationHelper::DarkType == themeType) {
+        qCDebug(remotemanage) << "dark theme type";
         color = QColor::fromRgb(192, 198, 212, 255);
-    else
+    } else {
+        qCDebug(remotemanage) << "light theme type";
         color = QColor::fromRgb(0, 26, 46, 255);
+    }
 
     palette.setBrush(QPalette::WindowText, color);
     m_titleLabel->setPalette(palette);
+}
+
+    palette = DPaletteHelper::instance()->palette(m_delServer);
+    palette.setColor(DPalette::ButtonText, palette.color(DPalette::TextWarning));
+    m_delServer->setPalette(palette);
 }
 
 /**
@@ -288,10 +342,12 @@ inline void ServerConfigOptDlg::handleThemeTypeChanged(DGuiApplicationHelper::Co
  */
 void ServerConfigOptDlg::updateSizeMode()
 {
+    // qDebug() << "Enter ServerConfigOptDlg::updateSizeMode";
 #ifdef DTKWIDGET_CLASS_DSizeMode
     QList<DLabel *> labelList = findChildren<DLabel *>();
 
     if (DGuiApplicationHelper::isCompactMode()) {
+        qCDebug(remotemanage) << "compact mode";
         for (DLabel *label : labelList) {
             label->setFixedHeight(COMMONHEIGHT_COMPACT);
         }
@@ -299,8 +355,10 @@ void ServerConfigOptDlg::updateSizeMode()
         m_iconLabel->setFixedSize(ICONSIZE_40_COMPACT, ICONSIZE_40_COMPACT);
         m_closeButton->setFixedWidth(ICONSIZE_40_COMPACT);
         m_closeButton->setIconSize(QSize(ICONSIZE_40_COMPACT, ICONSIZE_40_COMPACT));
+        DFontSizeManager::instance()->bind(m_advancedOptions, DFontSizeManager::T6, QFont::Normal);
         m_bottomVLine->setFixedSize(VERTICAL_WIDTH_COMPACT, VERTICAL_HEIGHT_COMPACT);
     } else {
+        qCDebug(remotemanage) << "normal mode";
         for (DLabel *label : labelList) {
             label->setMinimumHeight(COMMONHEIGHT);
         }
@@ -308,6 +366,7 @@ void ServerConfigOptDlg::updateSizeMode()
         m_iconLabel->setFixedSize(ICONSIZE_50, ICONSIZE_50);
         m_closeButton->setFixedWidth(ICONSIZE_50);
         m_closeButton->setIconSize(QSize(ICONSIZE_50, ICONSIZE_50));
+        DFontSizeManager::instance()->bind(m_advancedOptions, DFontSizeManager::T8, QFont::Normal);
         m_bottomVLine->setFixedSize(VERTICAL_WIDTH, VERTICAL_HEIGHT);
     }
 
@@ -318,6 +377,8 @@ void ServerConfigOptDlg::updateSizeMode()
 
 void ServerConfigOptDlg::initData()
 {
+    // qDebug() << "Enter ServerConfigOptDlg::initData";
+    qCDebug(remotemanage) << "Enter initData";
     QList<QString> groupList = ServerConfigManager::instance()->getServerConfigs().keys();
     m_group->addItems(groupList);
     m_group->setCurrentIndex(-1);
@@ -328,6 +389,7 @@ void ServerConfigOptDlg::initData()
     QList<QString> deleteKeyList = getDeleteKey();
     m_deleteKey->addItems(deleteKeyList);
     if (SCT_MODIFY == m_type && m_curServer != nullptr) {
+        qCDebug(remotemanage) << "modify server with valid server config";
         m_serverName->setText(m_curServer->m_serverName);
         m_currentServerName = m_serverName->text();
         m_address->setText(m_curServer->m_address);
@@ -339,22 +401,27 @@ void ServerConfigOptDlg::initData()
         m_command->setText(m_curServer->m_command);
         m_group->setCurrentText(m_curServer->m_group);
         if (!m_curServer->m_encoding.isEmpty()) {
+            qCDebug(remotemanage) << "setting encoding";
             int textCodeIndex = textCodeList.indexOf(m_curServer->m_encoding);
             m_coding->setCurrentIndex(textCodeIndex);
         }
         if (!m_curServer->m_backspaceKey.isEmpty()) {
+            qCDebug(remotemanage) << "setting backspace key";
             int backSpaceKeyIndex = backSpaceKeyList.indexOf(m_curServer->m_backspaceKey);
             m_backSapceKey->setCurrentIndex(backSpaceKeyIndex);
         }
         if (!m_curServer->m_deleteKey.isEmpty()) {
+            qCDebug(remotemanage) << "setting delete key";
             int deleteKeyIndex = deleteKeyList.indexOf(m_curServer->m_deleteKey);
             m_deleteKey->setCurrentIndex(deleteKeyIndex);
         }
     }
+    qCDebug(remotemanage) << "Exit initData";
 }
 
 QList<QString> ServerConfigOptDlg::getTextCodec()
 {
+    // qDebug() << "Enter ServerConfigOptDlg::getTextCodec";
     /******** Modify by ut000610 daizhengwen 2020-05-28: 编码列表和编码插件一致****************/
     //    QList<QByteArray> list = QTextCodec::availableCodecs();
     QList<QByteArray> list = Utils::encodeList();
@@ -362,14 +429,17 @@ QList<QString> ServerConfigOptDlg::getTextCodec()
     QList<QString> textCodecList;
     for (QByteArray &byteArr : list) {
         QString str = QString(byteArr);
-        if (!textCodecList.contains(str))
+        if (!textCodecList.contains(str)) {
+            qCDebug(remotemanage) << "adding new codec";
             textCodecList.append(str);
+        }
     }
     return textCodecList;
 }
 
 QList<QString> ServerConfigOptDlg::getBackSpaceKey()
 {
+    // qDebug() << "Enter ServerConfigOptDlg::getBackSpaceKey";
     QList<QString> eraseKeyList;
     eraseKeyList.append(("ascii-del"));
     eraseKeyList.append(("auto"));
@@ -381,6 +451,7 @@ QList<QString> ServerConfigOptDlg::getBackSpaceKey()
 
 QList<QString> ServerConfigOptDlg::getDeleteKey()
 {
+    // qDebug() << "Enter ServerConfigOptDlg::getDeleteKey";
     QList<QString> eraseKeyList;
     eraseKeyList.append(("escape-sequence"));
     eraseKeyList.append(("ascii-del"));
@@ -392,6 +463,7 @@ QList<QString> ServerConfigOptDlg::getDeleteKey()
 
 void ServerConfigOptDlg::setLabelStyle(DLabel *label)
 {
+    // qDebug() << "Enter ServerConfigOptDlg::setLabelStyle";
     label->setAlignment(Qt::AlignLeft);
     label->setAlignment(Qt::AlignVCenter);
     label->setMinimumHeight(36);
@@ -401,11 +473,13 @@ void ServerConfigOptDlg::setLabelStyle(DLabel *label)
 
 ServerConfigOptDlg::~ServerConfigOptDlg()
 {
+    // qDebug() << "Enter ServerConfigOptDlg::~ServerConfigOptDlg";
 }
 
 void ServerConfigOptDlg::updataData(ServerConfig *curServer)
 {
-    qInfo() << "ServerConfigOptDlg server configuration options updata data.";
+    // qDebug() << "Enter ServerConfigOptDlg::updataData";
+    qCDebug(remotemanage) << "ServerConfigOptDlg server configuration options updata data.";
     // 读取配置
     QList<QString> textCodeList = getTextCodec();
     QList<QString> backSpaceKeyList = getBackSpaceKey();
@@ -424,23 +498,28 @@ void ServerConfigOptDlg::updataData(ServerConfig *curServer)
     m_command->setText(curServer->m_command);
     m_group->setCurrentText(m_curServer->m_group);
     if (!curServer->m_encoding.isEmpty()) {
+        qCDebug(remotemanage) << "setting encoding";
         int textCodeIndex = textCodeList.indexOf(curServer->m_encoding);
         m_coding->setCurrentIndex(textCodeIndex);
     }
     if (!curServer->m_backspaceKey.isEmpty()) {
+        qCDebug(remotemanage) << "setting backspace key";
         int backSpaceKeyIndex = backSpaceKeyList.indexOf(curServer->m_backspaceKey);
         m_backSapceKey->setCurrentIndex(backSpaceKeyIndex);
     }
     if (!curServer->m_deleteKey.isEmpty()) {
+        qCDebug(remotemanage) << "setting delete key";
         int deleteKeyIndex = deleteKeyList.indexOf(curServer->m_deleteKey);
         m_deleteKey->setCurrentIndex(deleteKeyIndex);
     }
 
     m_currentServerName = m_serverName->text();
+    qCDebug(remotemanage) << "Exit updataData";
 }
 
 ServerConfig ServerConfigOptDlg::getData()
 {
+    // qDebug() << "Enter ServerConfigOptDlg::getData";
     ServerConfig config;
     config.m_serverName = m_serverName->text();
     config.m_address = m_address->text();
@@ -459,20 +538,104 @@ ServerConfig ServerConfigOptDlg::getData()
 
 void ServerConfigOptDlg::resetCurServer(ServerConfig *config)
 {
+    // qDebug() << "Enter ServerConfigOptDlg::resetCurServer";
     m_curServer = config;
+}
+
+void ServerConfigOptDlg::setAdvanceRegionVisible(bool isVisible)
+{
+    qCDebug(remotemanage) << "setAdvanceRegionVisible:" << isVisible;
+    // 点击【高级选项】展开，优先隐藏选项，防止因布局变更导致的闪烁问题。
+    bool focustOnAdvanced = m_advancedOptions->hasFocus();
+    if (isVisible) {
+        qCDebug(remotemanage) << "making advanced options visible";
+        //切换【高级选项】的焦点
+        m_advancedOptions->hide();
+    } else {
+        qCDebug(remotemanage) << "hiding advanced options";
+        m_advancedOptions->show();
+    }
+
+    //隐藏或显示【高级选项】下方的控件
+    int hideRow = m_pGridLayout->rowCount();
+    for(int row = 0; row < m_pGridLayout->rowCount(); row ++) {
+        for(int column = 0; column < m_pGridLayout->columnCount(); column ++) {
+            QLayoutItem *item = m_pGridLayout->itemAtPosition(row, column);
+            QWidget *cell = item ? item->widget() : nullptr;
+            if(nullptr == cell)
+                continue;
+
+            //获取【高级选项】对应的行
+            if(cell == m_advancedOptions)
+                hideRow = row;
+            //【高级选项】、【删除服务器】另外处理
+            if(cell == m_advancedOptions
+                    || cell == m_delServer)
+                continue;
+            //隐藏或显示【高级选项】下方的控件
+            if(row > hideRow)
+                cell->setVisible(isVisible);
+        }
+    }
+
+    // 继续展开删除选项，重设界面大小
+    if (isVisible) {
+        qCDebug(remotemanage) << "expanding advanced options";
+        if (focustOnAdvanced) {
+            qCDebug(remotemanage) << "setting focus to group";
+            m_group->setFocus();
+        }
+
+#ifdef DTKWIDGET_CLASS_DSizeMode
+        //修改界面
+        if (SCT_MODIFY == m_type) {
+            qCDebug(remotemanage) << "modify type - showing delete server";
+            m_delServer->show();
+        } else {
+            qCDebug(remotemanage) << "add type - hiding delete server";
+            m_delServer->hide();
+        }
+        //singleShot是为了避免size和resize的不一样
+        QTimer::singleShot(0, this, [=](){ resize(SETTING_DIALOG_WIDTH, sizeHint().height()); });
+
+#else
+        //修改界面
+        if (SCT_MODIFY == m_type) {
+            qCDebug(remotemanage) << "modify type - showing delete server (no DSizeMode)";
+            m_delServer->show();
+            //singleShot是为了避免size和resize的不一样
+            QTimer::singleShot(0, this, [=](){resize(459, 670);});
+        } else {
+            qCDebug(remotemanage) << "add type - hiding delete server (no DSizeMode)";
+            m_delServer->hide();
+            QTimer::singleShot(0, this, [=](){resize(459, 630);});
+        }
+#endif
+    } else {
+        qCDebug(remotemanage) << "collapsing advanced options";
+        m_delServer->hide();
+
+#ifdef DTKWIDGET_CLASS_DSizeMode
+        resize(SETTING_DIALOG_WIDTH, sizeHint().height());
+#else
+        resize(459, 392);    
+#endif
+    }
 }
 
 void ServerConfigOptDlg::slotAddSaveButtonClicked()
 {
-    qInfo() << "ServerConfigOptDlg add and save button clicled slot function.";
+    qCInfo(remotemanage) << "ServerConfigOptDlg add and save button clicled slot function.";
     // 服务器名为空
     if (m_serverName->text().trimmed().isEmpty()) {
+        qCDebug(remotemanage) << "server name is empty";
         m_serverName->showAlertMessage(tr("Please enter a server name"), m_serverName);
         return;
     }
 
     /***add begin by ut001121 zhangmeng 20200615 限制名称字符长度 修复BUG31286***/
     if (m_serverName->text().length() > MAX_NAME_LEN) {
+        qCDebug(remotemanage) << "server name too long";
         m_serverName->showAlertMessage(QObject::tr("The name should be no more than 32 characters"), m_serverName);
         return;
     }
@@ -480,17 +643,20 @@ void ServerConfigOptDlg::slotAddSaveButtonClicked()
 
     // 地址为空
     if (m_address->text().trimmed().isEmpty()) {
+        qCDebug(remotemanage) << "address is empty";
         m_address->showAlertMessage(tr("Please enter an IP address"), m_address);
         return;
     }
     // 端口为空
     if (m_port->text().trimmed().isEmpty()) {
+        qCDebug(remotemanage) << "port is empty";
         m_port_tip->showAlertMessage(tr("Please enter a port"));
         return;
     }
 
     //---added by qinyaning(nyq) to show the tip when username is empty---//
     if (m_userName->text().trimmed().isEmpty()) { //如果用户名为空， 提示用户名为空， 添加失败
+        qCDebug(remotemanage) << "username is empty";
         m_userName->showAlertMessage(tr("Please enter a username"), m_userName);
         return;
     }
@@ -500,11 +666,13 @@ void ServerConfigOptDlg::slotAddSaveButtonClicked()
     if ((SCT_ADD == m_type)
             || ((SCT_MODIFY == m_type  && m_curServer != nullptr)
                 && (m_curServer->m_serverName.trimmed() != m_serverName->text().trimmed()))) { /*此时用户已经在修改模式下修改了服务器名称*/
+        qCDebug(remotemanage) << "checking for duplicate server name";
         QMap<QString, QList<ServerConfig *>> severConfigs = ServerConfigManager::instance()->getServerConfigs();
         for (QMap<QString, QList<ServerConfig *>>::iterator iter = severConfigs.begin(); iter != severConfigs.end(); ++iter) {
             QList<ServerConfig *> value = iter.value();
             for (int i = 0; i < value.size(); i++) {
                 if (value[i]->m_serverName.trimmed() == m_serverName->text().trimmed()) { //服务器名相同
+                    qCDebug(remotemanage) << "duplicate server name found";
                     QString strFirstLine = tr("The server name already exists,");
                     QString strSecondeLine = tr("please input another one. ");
                     Utils::showSameNameDialog(this, strFirstLine, strSecondeLine);
@@ -528,17 +696,20 @@ void ServerConfigOptDlg::slotAddSaveButtonClicked()
     config->m_backspaceKey = m_backSapceKey->currentText();
     config->m_deleteKey = m_deleteKey->currentText();
     if (SCT_ADD == m_type) {
+        qCDebug(remotemanage) << "adding new server config";
         ServerConfigManager::instance()->saveServerConfig(config);
         ServerConfigManager::instance()->refreshList();
     } else if (SCT_MODIFY == m_type && m_curServer != nullptr) {
+        qCDebug(remotemanage) << "modifying existing server config";
         ServerConfigManager::instance()->modifyServerConfig(config, m_curServer);
     }
     accept();
-    qInfo() << __FUNCTION__ << "add or save remote config finish";
+    qCInfo(remotemanage) << "Add or save remote config finish";
 }
 
 void ServerConfigOptDlg::slotFileChooseDialog()
 {
+    // qDebug() << "Enter ServerConfigOptDlg::slotFileChooseDialog";
     DFileDialog dialog(this, QObject::tr("Select the private key file"));
     dialog.setAcceptMode(QFileDialog::AcceptOpen);
     dialog.setFileMode(QFileDialog::ExistingFile);
@@ -548,6 +719,7 @@ void ServerConfigOptDlg::slotFileChooseDialog()
     int code = dialog.exec();
 
     if (QDialog::Accepted == code && !dialog.selectedFiles().isEmpty()) {
+        qCDebug(remotemanage) << "file dialog accepted with selected files";
         QStringList list = dialog.selectedFiles();
         const QString fileName = list.first();
 

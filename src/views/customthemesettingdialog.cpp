@@ -15,7 +15,7 @@
 #include <DPushButton>
 #include <DSuggestButton>
 #include <DFontSizeManager>
-#include <DApplicationHelper>
+#include <DGuiApplicationHelper>
 #include <DPaletteHelper>
 #include <DVerticalLine>
 
@@ -26,25 +26,34 @@
 #include <QFile>
 #include <QTimer>
 #include <QPainterPath>
+#include <QLoggingCategory>
+
+Q_DECLARE_LOGGING_CATEGORY(views)
 
 TitleStyleRadioButton::TitleStyleRadioButton(const QString &text, QWidget *parent): DRadioButton(text, parent)
 {
-
+    // qDebug() << "Enter TitleStyleRadioButton::TitleStyleRadioButton";
 }
 
 void TitleStyleRadioButton::mousePressEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton)
+    // qDebug() << "Enter TitleStyleRadioButton::mousePressEvent";
+    if (event->button() == Qt::LeftButton) {
+        qCDebug(views) << "Left button pressed";
         m_mouseClick = true;
+    }
 
     DRadioButton::mousePressEvent(event);
 }
 
 void TitleStyleRadioButton::keyPressEvent(QKeyEvent *event)
 {
+    // qDebug() << "Enter TitleStyleRadioButton::keyPressEvent";
     //增加设置按键捕获，让单选按钮在键盘操作下同样支持enter键盘控制作为选中操作，原生已经支持空格键作为选中操作
-    if ((Qt::Key_Return == event->key()) || (Qt::Key_Enter == event->key()))
+    if ((Qt::Key_Return == event->key()) || (Qt::Key_Enter == event->key())) {
+        qCDebug(views) << "Return or Enter key pressed";
         setChecked(true);
+    }
 
     DRadioButton::keyPressEvent(event);
 }
@@ -52,22 +61,26 @@ void TitleStyleRadioButton::keyPressEvent(QKeyEvent *event)
 
 ColorPushButton::ColorPushButton(QWidget *parent): DPushButton(parent)
 {
+    // qDebug() << "Enter ColorPushButton::ColorPushButton";
     setFocusPolicy(Qt::TabFocus);
 }
 
 void ColorPushButton::setBackGroundColor(const QColor &color)
 {
+    // qDebug() << "Enter ColorPushButton::setBackGroundColor";
     m_color = color;
     update();
 }
 
 QColor ColorPushButton::getBackGroundColor()
 {
+    // qDebug() << "Enter ColorPushButton::getBackGroundColor";
     return  m_color;
 }
 
 void ColorPushButton::paintEvent(QPaintEvent *event)
 {
+    // qDebug() << "Enter ColorPushButton::paintEvent";
     Q_UNUSED(event)
 
     QPainter painter(this);
@@ -76,10 +89,13 @@ void ColorPushButton::paintEvent(QPaintEvent *event)
     painter.setOpacity(1);
 
     QColor borderColor;
-    if (DGuiApplicationHelper::LightType == DGuiApplicationHelper::instance()->themeType())
+    if (DGuiApplicationHelper::LightType == DGuiApplicationHelper::instance()->themeType()) {
+        // qCDebug(views) << "Light theme type";
         borderColor = QColor::fromRgb(0, 0, 0, static_cast<int>(255 * 0.05));
-    else
+    } else {
+        // qCDebug(views) << "Dark theme type";
         borderColor = QColor::fromRgb(255, 255, 255, static_cast<int>(255 * 0.2));
+    }
 
     //绘制背景色,边框
     {
@@ -96,6 +112,7 @@ void ColorPushButton::paintEvent(QPaintEvent *event)
 
     //tab焦点存在，绘制边框
     if (m_isFocus) {
+        // qCDebug(views) << "Focus is active, drawing border";
         //边框绘制路径
         QPainterPath pathFrame;
         pathFrame.addRoundedRect(QRectF(1, 1, 32, 32), 8, 8);
@@ -112,13 +129,17 @@ void ColorPushButton::paintEvent(QPaintEvent *event)
 
 void ColorPushButton::focusInEvent(QFocusEvent *event)
 {
+    // qDebug() << "Enter ColorPushButton::focusInEvent";
     // 焦点入
     if ((Qt::TabFocusReason == event->reason()) || (Qt::BacktabFocusReason == event->reason())) {
+        // qCDebug(views) << "Tab focus reason";
         m_isFocus = true;
     } else if ((Qt::ActiveWindowFocusReason == event->reason()) && m_isFocus) {
+        // qCDebug(views) << "Active window focus reason and focus is active";
         //取色面板退出时，是否仍然保留选中焦点，如果是键盘控制的情况，仍然保持保持焦点的状态
         m_isFocus = true;
     } else {
+        // qCDebug(views) << "Other focus reason";
         //除了键盘操作的其他情况，都不保持焦点状态
         m_isFocus = false;
     }
@@ -127,9 +148,10 @@ void ColorPushButton::focusInEvent(QFocusEvent *event)
 
 void ColorPushButton::focusOutEvent(QFocusEvent *event)
 {
+    // qDebug() << "Enter ColorPushButton::focusOutEvent";
     // 焦点Tab出
     if ((Qt::TabFocusReason == event->reason()) || (Qt::BacktabFocusReason == event->reason())) {
-        qInfo() << "ColorPushButton::focusOutEvent-------163" ;
+        // qCDebug(views) << "Tab focus out reason";
         m_isFocus = false;
     }
     DPushButton::focusOutEvent(event);
@@ -137,14 +159,18 @@ void ColorPushButton::focusOutEvent(QFocusEvent *event)
 
 void ColorPushButton::keyPressEvent(QKeyEvent *event)
 {
-    if ((Qt::Key_Return == event->key()) || (Qt::Key_Enter == event->key()))
+    // qDebug() << "Enter ColorPushButton::keyPressEvent";
+    if ((Qt::Key_Return == event->key()) || (Qt::Key_Enter == event->key())) {
+        // qCDebug(views) << "Return or Enter key pressed";
         m_isFocus = true;
+    }
 
     DPushButton::keyPressEvent(event);
 }
 
 void ColorPushButton::mousePressEvent(QMouseEvent *event)
 {
+    // qDebug() << "Enter ColorPushButton::mousePressEvent";
     emit clearFocussSignal();
     DPushButton::mousePressEvent(event);
 }
@@ -157,6 +183,7 @@ CustomThemeSettingDialog::CustomThemeSettingDialog(QWidget *parent) : DAbstractD
     , m_ps1Button(new ColorPushButton(this))
     , m_ps2Button(new ColorPushButton(this))
 {
+    qCDebug(views) << "CustomThemeSettingDialog constructor entered";
     initUITitle();
     initUI();
     initTitleConnections();
@@ -167,7 +194,9 @@ CustomThemeSettingDialog::CustomThemeSettingDialog(QWidget *parent) : DAbstractD
     updateSizeMode();
     connect(DGuiApplicationHelper::instance(), &DGuiApplicationHelper::sizeModeChanged, this, &CustomThemeSettingDialog::updateSizeMode);
     connect(DGuiApplicationHelper::instance(), &DGuiApplicationHelper::fontChanged, this, [this](){
+        qDebug() << "Lambda: Font changed signal received";
         if (isVisible() && layout()) {
+            qCDebug(views) << "Dialog is visible and has layout";
             layout()->invalidate();
             updateGeometry();
             // 根据新界面布局，刷新界面大小
@@ -177,10 +206,13 @@ CustomThemeSettingDialog::CustomThemeSettingDialog(QWidget *parent) : DAbstractD
 #else
     setFixedSize(459, 378);
 #endif
+    qCDebug(views) << "CustomThemeSettingDialog constructor finished";
 }
 
 void CustomThemeSettingDialog::initUITitle()
 {
+    qCDebug(views) << "CustomThemeSettingDialog::initUITitle() entered";
+
     QVBoxLayout *mainLayout = new QVBoxLayout();
     mainLayout->setSpacing(0);
     mainLayout->setContentsMargins(0, 0, 0, 11);
@@ -238,10 +270,13 @@ void CustomThemeSettingDialog::initUITitle()
     m_titleText->setText(tr("Custom Theme"));
 
     m_mainLayout = mainLayout;
+    qCDebug(views) << "CustomThemeSettingDialog::initUITitle() finished";
 }
 
 void CustomThemeSettingDialog::initUI()
 {
+    qCDebug(views) << "CustomThemeSettingDialog::initUI() entered";
+
     QWidget *contentFrame = new QWidget;
 
     QVBoxLayout *contentLayout = new QVBoxLayout;
@@ -388,11 +423,15 @@ void CustomThemeSettingDialog::initUI()
     connect(m_ps2Button, &ColorPushButton::clearFocussSignal, this, &CustomThemeSettingDialog::clearFocussSlot);
 
     loadConfiguration();
+    qCDebug(views) << "CustomThemeSettingDialog::initUI() finished";
 }
 
 void CustomThemeSettingDialog::initTitleConnections()
 {
+    qCDebug(views) << "CustomThemeSettingDialog::initTitleConnections() entered";
+
     connect(m_closeButton, &DWindowCloseButton::clicked, this, [this]() {
+        qDebug() << "Lambda: Close button clicked";
         loadConfiguration();
         reject();
     });
@@ -408,10 +447,12 @@ void CustomThemeSettingDialog::initTitleConnections()
         palette.setBrush(QPalette::WindowText, color);
         m_titleText->setPalette(palette);
     });
+    qCDebug(views) << "CustomThemeSettingDialog::initTitleConnections() finished";
 }
 
 void CustomThemeSettingDialog::addCancelConfirmButtons()
 {
+    // qDebug() << "Enter CustomThemeSettingDialog::addCancelConfirmButtons";
     QHBoxLayout *buttonsLayout = new QHBoxLayout();
     buttonsLayout->setSpacing(9);
     buttonsLayout->setContentsMargins(10, 0, 10, 0);
@@ -440,11 +481,11 @@ void CustomThemeSettingDialog::addCancelConfirmButtons()
     setTabOrder(m_confirmBtn, m_closeButton);//设置右上角关闭按钮的tab键控制顺序
 
     m_verticalLine = new DVerticalLine(this);
-    DPalette pa = DApplicationHelper::instance()->palette(m_verticalLine);
+    DPalette pa = DPaletteHelper::instance()->palette(m_verticalLine);
     QColor splitColor = pa.color(DPalette::ItemBackground);
-    pa.setBrush(DPalette::Background, splitColor);
+    pa.setBrush(DPalette::Window, splitColor);
     m_verticalLine->setPalette(pa);
-    m_verticalLine->setBackgroundRole(QPalette::Background);
+    m_verticalLine->setBackgroundRole(DPalette::Window);
     m_verticalLine->setAutoFillBackground(true);
     m_verticalLine->setFixedSize(3, 28);
 
@@ -457,7 +498,6 @@ void CustomThemeSettingDialog::addCancelConfirmButtons()
 
     connect(m_cancelBtn, &DPushButton::clicked, this, [ = ]() {
         m_confirmBtn->setFocus();
-        qInfo() << "------------reject()-------------";
         loadConfiguration();
         reject();
     });
@@ -488,11 +528,16 @@ void CustomThemeSettingDialog::addCancelConfirmButtons()
 
 void CustomThemeSettingDialog::onSelectColor()
 {
+    qCDebug(views) << "CustomThemeSettingDialog::onSelectColor() entered";
+
     ColorPushButton *pushButton = qobject_cast<ColorPushButton *>(sender());
     if (pushButton) {
+        qCDebug(views) << "Valid push button sender";
         QColor newColor = DColorDialog::getColor(pushButton->getBackGroundColor(), this);
         if (newColor.isValid()) {
+            qCDebug(views) << "Valid color selected";
             pushButton->setBackGroundColor(newColor);
+            qCDebug(views) << "Selected color:" << newColor.name();
             if (pushButton == m_foregroundButton)
                 m_themePreviewArea->setForegroundgroundColor(newColor);
 
@@ -510,6 +555,7 @@ void CustomThemeSettingDialog::onSelectColor()
 
 void CustomThemeSettingDialog::clearFocussSlot()
 {
+    // qDebug() << "Enter CustomThemeSettingDialog::clearFocussSlot";
     m_closeButton->clearFocus();
     m_darkRadioButton->clearFocus();
     m_lightRadioButton->clearFocus();
@@ -534,14 +580,17 @@ void CustomThemeSettingDialog::clearFocussSlot()
  */
 void CustomThemeSettingDialog::updateSizeMode()
 {
+    // qDebug() << "Enter CustomThemeSettingDialog::updateSizeMode";
 #ifdef DTKWIDGET_CLASS_DSizeMode
     if (DGuiApplicationHelper::isCompactMode()) {
+        qCDebug(views) << "Compact mode";
         m_titleBar->setFixedHeight(WIN_TITLE_BAR_HEIGHT_COMPACT);
         m_logoIcon->setFixedSize(QSize(ICONSIZE_40_COMPACT, ICONSIZE_40_COMPACT));
         m_closeButton->setIconSize(QSize(ICONSIZE_40_COMPACT, ICONSIZE_40_COMPACT));
         m_verticalLine->setFixedSize(VERTICAL_WIDTH_COMPACT, VERTICAL_HEIGHT_COMPACT);
 
     } else {
+        qCDebug(views) << "Normal mode";
         m_titleBar->setFixedHeight(WIN_TITLE_BAR_HEIGHT);
         m_logoIcon->setFixedSize(QSize(ICONSIZE_50, ICONSIZE_50));
         m_closeButton->setIconSize(QSize(ICONSIZE_50, ICONSIZE_50));
@@ -549,6 +598,7 @@ void CustomThemeSettingDialog::updateSizeMode()
     }
 
     if (layout()) {
+        qCDebug(views) << "Layout exists, invalidating";
         layout()->invalidate();
     }
     updateGeometry();
@@ -559,26 +609,29 @@ void CustomThemeSettingDialog::updateSizeMode()
 
 void CustomThemeSettingDialog::loadConfiguration()
 {
+    // qDebug() << "Enter CustomThemeSettingDialog::loadConfiguration";
     //重置单选按钮的tab焦点状态
     resetFocusState();
 
-    if ("Light" == Settings::instance()->themeSetting->value("CustomTheme/TitleStyle"))
+    if ("Light" == Settings::instance()->themeSetting->value("CustomTheme/TitleStyle")) {
+        qCDebug(views) << "Light theme style";
         m_lightRadioButton->setChecked(true);
-    else
+    } else {
+        qCDebug(views) << "Dark theme style";
         m_darkRadioButton->setChecked(true);
+    }
 
     QColor foregroundColorParameter;
     QSettings themeSetting(Settings::instance()->m_configCustomThemePath, QSettings::IniFormat);
     QPalette palette;
     QStringList strList = Settings::instance()->themeSetting->value("Foreground/Color").toStringList();
 
+    qCInfo(views) << "Foreground color list number: " << strList.size();
     if (strList.size() != 3) {
-        qInfo() << "strList.size()!=3";
-        palette.setColor(QPalette::Background, QColor(0, 255, 0));
+        palette.setColor(DPalette::Window, QColor(0, 255, 0));
         foregroundColorParameter = QColor(0, 255, 0);
     } else {
-        palette.setColor(QPalette::Background, QColor(strList[0].toInt(), strList[1].toInt(), strList[2].toInt()));
-        qInfo() << strList[0] << strList[1] << strList[2];
+        palette.setColor(DPalette::Window, QColor(strList[0].toInt(), strList[1].toInt(), strList[2].toInt()));
         foregroundColorParameter = QColor(strList[0].toInt(), strList[1].toInt(), strList[2].toInt());
     }
     m_foregroundButton->setBackGroundColor(foregroundColorParameter);
@@ -586,12 +639,12 @@ void CustomThemeSettingDialog::loadConfiguration()
     QColor backgroundColorParameter;
     strList.clear();
     strList = Settings::instance()->themeSetting->value("Background/Color").toStringList();
+    qCInfo(views) << "Background color list number: " << strList.size();
     if (strList.size() != 3) {
-        qInfo() << "strList.size()!=3";
-        palette.setColor(QPalette::Background, QColor(37, 37, 37));
+        palette.setColor(DPalette::Window, QColor(37, 37, 37));
         backgroundColorParameter = QColor(37, 37, 37);
     } else {
-        palette.setColor(QPalette::Background, QColor(strList[0].toInt(), strList[1].toInt(), strList[2].toInt()));
+        palette.setColor(DPalette::Window, QColor(strList[0].toInt(), strList[1].toInt(), strList[2].toInt()));
         backgroundColorParameter = QColor(strList[0].toInt(), strList[1].toInt(), strList[2].toInt());
     }
     m_backgroundButton->setBackGroundColor(backgroundColorParameter);
@@ -599,12 +652,12 @@ void CustomThemeSettingDialog::loadConfiguration()
     QColor ps1ColorParameter;
     strList.clear();
     strList = Settings::instance()->themeSetting->value("Color2Intense/Color").toStringList();
+    qCInfo(views) << "Color2Intense color list number: " << strList.size();
     if (strList.size() != 3) {
-        qInfo() << "strList.size()!=3";
-        palette.setColor(QPalette::Background, QColor(133, 153, 0));
+        palette.setColor(DPalette::Window, QColor(133, 153, 0));
         ps1ColorParameter = QColor(133, 153, 0);
     } else {
-        palette.setColor(QPalette::Background, QColor(strList[0].toInt(), strList[1].toInt(), strList[2].toInt()));
+        palette.setColor(DPalette::Window, QColor(strList[0].toInt(), strList[1].toInt(), strList[2].toInt()));
         ps1ColorParameter = QColor(strList[0].toInt(), strList[1].toInt(), strList[2].toInt());
     }
     m_ps1Button->setBackGroundColor(ps1ColorParameter);
@@ -612,12 +665,12 @@ void CustomThemeSettingDialog::loadConfiguration()
     QColor ps2ColorParameter;
     strList.clear();
     strList = Settings::instance()->themeSetting->value("Color4Intense/Color").toStringList();
+    qCInfo(views) << "Color4Intense color list number: " << strList.size();
     if (strList.size() != 3) {
-        qInfo() << "strList.size()!=3";
-        palette.setColor(QPalette::Background, QColor(52, 101, 164));
+        palette.setColor(DPalette::Window, QColor(52, 101, 164));
         ps2ColorParameter = QColor(52, 101, 164);
     } else {
-        palette.setColor(QPalette::Background, QColor(strList[0].toInt(), strList[1].toInt(), strList[2].toInt()));
+        palette.setColor(DPalette::Window, QColor(strList[0].toInt(), strList[1].toInt(), strList[2].toInt()));
         ps2ColorParameter = QColor(strList[0].toInt(), strList[1].toInt(), strList[2].toInt());
     }
     m_ps2Button->setBackGroundColor(ps2ColorParameter);
@@ -627,7 +680,9 @@ void CustomThemeSettingDialog::loadConfiguration()
 
 void CustomThemeSettingDialog::keyPressEvent(QKeyEvent *event)
 {
+    // qDebug() << "Enter CustomThemeSettingDialog::keyPressEvent";
     if (Qt::Key_Escape == event->key()) {
+        qCDebug(views) << "Escape key pressed";
         loadConfiguration();
         reject();
     }
@@ -635,12 +690,14 @@ void CustomThemeSettingDialog::keyPressEvent(QKeyEvent *event)
 
 void CustomThemeSettingDialog::showEvent(QShowEvent *event)
 {
+    // qDebug() << "Enter CustomThemeSettingDialog::showEvent";
     clearFocussSlot();
     DAbstractDialog::showEvent(event);
 }
 
 void CustomThemeSettingDialog::resetFocusState()
 {
+    // qDebug() << "Enter CustomThemeSettingDialog::resetFocusState";
     m_darkRadioButton->setFocusPolicy(Qt::NoFocus);
     m_darkRadioButton->setFocusPolicy(Qt::TabFocus);
     m_lightRadioButton->setFocus();

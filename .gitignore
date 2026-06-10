@@ -1,4 +1,5 @@
 # User config
+*.qm
 *.user
 moc_*.h
 moc_*.cpp
@@ -8,3 +9,10 @@ build/
 build-*/
 CMakeLists.txt.user
 deepin-terminal.pro.user
+.cache/*
+.cursor/*
+.claude/
+.codegraph/
+.npm-cache/
+.trellis/
+obj-*-linux-gnu/

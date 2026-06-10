@@ -43,12 +43,12 @@
 #include <QtDebug>
 #include <QMessageBox>
 #include <QDir>
-#include <QRegExp>
-#include <QRegExpValidator>
 #include <QTextCodec>
 
 #include "kpty.h"
 #include "kptydevice.h"
+#include "encodes/detectcode.h"
+#include "qtcompat.h"
 
 using namespace Konsole;
 
@@ -265,6 +265,28 @@ Pty::Pty(QObject *parent)
 
 void Pty::init()
 {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    // Must call parent class child process modifier, as it sets file descriptors ...etc
+    auto parentChildProcModifier = KPtyProcess::childProcessModifier();
+    setChildProcessModifier([parentChildProcModifier = std::move(parentChildProcModifier)]() {
+        if (parentChildProcModifier) {
+            parentChildProcModifier();
+        }
+
+        // reset all signal handlers
+        // this ensures that terminal applications respond to
+        // signals generated via key sequences such as Ctrl+C
+        // (which sends SIGINT)
+        struct sigaction action;
+        sigemptyset(&action.sa_mask);
+        action.sa_handler = SIG_DFL;
+        action.sa_flags = 0;
+        for (int signal = 1; signal < NSIG; signal++) {
+            sigaction(signal, &action, nullptr);
+        }
+    });
+#endif
+
     _windowColumns = 0;
     _windowLines = 0;
     _eraseChar = 0;
@@ -294,9 +316,9 @@ bool isPatternAcceptable(QString strCommand, QString strPattern)
 {
     QString strTrimmedCmd = strCommand.trimmed();
 
-    QRegExp cmdRegExp;
+    REG_EXP cmdRegExp;
     cmdRegExp.setPattern(strPattern);
-    QRegExpValidator cmdREValidator(cmdRegExp, nullptr);
+    REG_EXPV cmdREValidator(cmdRegExp, nullptr);
 
     int pos = 0;
     QValidator::State validateState = cmdREValidator.validate(strTrimmedCmd, pos);
@@ -480,7 +502,7 @@ void Pty::sendData(const char *data, int length, const QTextCodec *codec)
             QMetaObject::invokeMethod(this, "ptyUninstallTerminal", Qt::AutoConnection, Q_RETURN_ARG(bool, _bUninstall), Q_ARG(QString, strname));
             /******** Modify by nt001000 renfeixiang 2020-05-27:修改 根据remove和purge卸载命令，发送信号不同参数值 End***************/
             if (_bUninstall) {
-                qDebug() << "确认卸载终端！" << _bUninstall << endl;
+                qDebug() << "确认卸载终端！" << _bUninstall;
                 connect(SessionManager::instance(), &SessionManager::sessionIdle, this, [ = ](bool isIdle) {
                     //卸载完成，关闭所有终端窗口
                     if (isIdle) {
@@ -494,7 +516,7 @@ void Pty::sendData(const char *data, int length, const QTextCodec *codec)
                     }
                 });
             } else {
-                qDebug() << "不卸载终端！" << _bUninstall << endl;
+                qDebug() << "不卸载终端！" << _bUninstall;
                 return;
             }
         }
@@ -502,13 +524,14 @@ void Pty::sendData(const char *data, int length, const QTextCodec *codec)
 
     //为GBK/GB2312/GB18030编码，且不是输入命令执行的情况（没有按回车）
     if (QString(codec->name()).toUpper().startsWith("GB") && !_isCommandExec) {
+        
         QTextCodec *utf8Codec = QTextCodec::codecForName("UTF-8");
         QString unicodeData = codec->toUnicode(data);
         QByteArray unicode = utf8Codec->fromUnicode(unicodeData);
 
         if (!pty()->write(unicode.constData(), unicode.length())) {
-            qWarning() << "Pty::doSendJobs - Could not send input data to terminal process.";
-            return;
+          qWarning() << "Pty::doSendJobs - Could not send input data to terminal process.";
+          return;
         }
     }
     else {
@@ -585,7 +608,7 @@ void Pty::dataReceived()
     }
 
     // "\u008A"这个乱码不替换调会导致显示时有\b的效果导致命令错乱bug#23741
-    if (recvData.contains("\u008A")) {
+    if (_utf8 && recvData.contains("\u008A")) {
         recvData.replace("\u008A", "\b \b #");
         data = recvData.toUtf8();
     }
@@ -594,6 +617,56 @@ void Pty::dataReceived()
         recvData += "\r\n";
         data = recvData.toUtf8();
     }
+
+    // NOTE: 为处理编码截断的情况，需要缓存数据等待换行符 '\n' 或终端结束符 "\x1B[00m"
+    // 此处理仅在非UTF8编码, 且命令输出时生效
+    if (!_utf8) {
+        if (_isCommandExec) {
+            // 命令输出数据
+            int index = data.lastIndexOf('\n');
+            if (-1 == index) {
+                _waitLFBuffer.append(data);
+
+                // 判断是否包含结束符
+                if (_waitLFBuffer.contains("\x1B[00m")) {
+                    emit receivedData(_waitLFBuffer.constData(), _waitLFBuffer.size(), true);
+                    _waitLFBuffer.clear();
+                }
+
+            }
+            else if (index != data.count() - 1) {
+                int remainingCount = data.size() - index - 1;
+
+                // 判断是否包含结束符
+                if (QByteArray::fromRawData(data.constData() + index + 1, remainingCount).contains("\x1B[00m")) {
+                    _waitLFBuffer.append(data);
+                    emit receivedData(_waitLFBuffer.constData(), _waitLFBuffer.count(), true);
+
+                    _waitLFBuffer.clear();
+                } else {
+                    data.prepend(_waitLFBuffer);
+                    emit receivedData(data.constData(), _waitLFBuffer.count() + index + 1, true);
+
+                    _waitLFBuffer = data.right(remainingCount);
+                }
+
+            } else {
+                data.prepend(_waitLFBuffer);
+                emit receivedData(data.constData(), data.count(), true);
+
+                _waitLFBuffer.clear();
+            }
+
+            // 缓存数据并跳出
+            return;
+        } else {
+            if (!_waitLFBuffer.isEmpty()) {
+                emit receivedData(_waitLFBuffer.constData(), _waitLFBuffer.count(), _isCommandExec);
+                _waitLFBuffer.clear();
+            }
+        }
+    }
+
     /********************* Modify by m000714 daizhengwen End ************************/
     emit receivedData(data.constData(), data.count(), _isCommandExec);
 }
@@ -625,6 +698,7 @@ void Pty::setSessionId(int sessionId)
     _sessionId = sessionId;
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 void Pty::setupChildProcess()
 {
     KPtyProcess::setupChildProcess();
@@ -645,3 +719,4 @@ void Pty::setupChildProcess()
     }
     sigprocmask(SIG_UNBLOCK, &sigset, nullptr);
 }
+#endif

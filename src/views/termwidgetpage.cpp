@@ -18,6 +18,7 @@
 
 #include <QVBoxLayout>
 #include <QApplication>
+#include <QLoggingCategory>
 
 // Find the previous term widget in the widget tree.
 static TermWidget* WidgetTreeReverseFindTerm(QWidget *widget)
@@ -39,11 +40,13 @@ static TermWidget* WidgetTreeReverseFindTerm(QWidget *widget)
     return nullptr;
 }
 
-
+Q_DECLARE_LOGGING_CATEGORY(views)
 TermWidgetPage::TermWidgetPage(const TermProperties &properties, QWidget *parent)
     : QWidget(parent), m_findBar(new PageSearchBar(this))
 {
+    qCDebug(views) << "TermWidgetPage constructor enter";
     Utils::set_Object_Name(this);
+    qCDebug(views) << "Setting up main window reference";
     m_MainWindow = qobject_cast<MainWindow *>(parentWidget());
     setFocusPolicy(Qt::NoFocus);
     setProperty("TAB_CUSTOM_NAME_PROPERTY", false);
@@ -62,6 +65,7 @@ TermWidgetPage::TermWidgetPage(const TermProperties &properties, QWidget *parent
     m_layout->addWidget(w);
     setLayout(m_layout);
 
+    qCDebug(views) << "Connecting find bar signals";
     // Init find bar.
     connect(m_findBar, &PageSearchBar::findNext, this, &TermWidgetPage::handleFindNext);
     connect(m_findBar, &PageSearchBar::findPrev, this, &TermWidgetPage::handleFindPrev);
@@ -75,40 +79,51 @@ TermWidgetPage::TermWidgetPage(const TermProperties &properties, QWidget *parent
     m_currentTerm = w;
 
 #ifdef DTKWIDGET_CLASS_DSizeMode
+    qCDebug(views) << "Branch: DTKWIDGET_CLASS_DSizeMode defined, connecting size mode change";
     connect(DGuiApplicationHelper::instance(), &DGuiApplicationHelper::sizeModeChanged, this, [this](){
         m_findBar->move(width() - m_findBar->width(), 0);
     }, Qt::QueuedConnection);
 #endif
+    qCDebug(views) << "TermWidgetPage constructor finished";
 }
 
 inline void TermWidgetPage::handleKeywordChanged(const QString &keyword)
 {
+    qCDebug(views) << "Enter TermWidgetPage::handleKeywordChanged with keyword:" << keyword;
     handleUpdateSearchKeyword(keyword);
 }
 
 inline void TermWidgetPage::handleThemeTypeChanged()
 {
+    qCDebug(views) << "Enter TermWidgetPage::handleThemeTypeChanged";
     applyTheme();
 }
 
 inline bool TermWidgetPage::handleUninstallTerminal(QString commandname)
 {
+    qCDebug(views) << "Enter TermWidgetPage::handleUninstallTerminal with command:" << commandname;
     //MainWindow *mainWindow = qobject_cast<MainWindow *>(parent);
     //构造函数中已经获取了mainwindow窗口，无需在获取一遍
     if (m_MainWindow && m_MainWindow->hasRunningProcesses()) {
-        if (!Utils::showExitUninstallConfirmDialog())
+        qCDebug(views) << "Branch: Has running processes, showing exit confirmation";
+        if (!Utils::showExitUninstallConfirmDialog()) {
+            qCDebug(views) << "Branch: User cancelled exit confirmation";
             return false;
+        }
     }
+    qCDebug(views) << "Branch: Showing uninstall confirmation dialog";
     return Utils::showUninstallConfirmDialog(commandname);
 }
 
 MainWindow *TermWidgetPage::parentMainWindow()
 {
+    // qCDebug(views) << "Enter TermWidgetPage::parentMainWindow";
     return m_MainWindow;
 }
 
 void TermWidgetPage::setParentMainWindow(MainWindow *mainWin)
 {
+    // qCDebug(views) << "Enter TermWidgetPage::setParentMainWindow";
     m_MainWindow = mainWin;
 }
 
@@ -117,6 +132,7 @@ void TermWidgetPage::setParentMainWindow(MainWindow *mainWin)
 // be removed.
 void TermWidgetPage::setSplitStyle(DSplitter *splitter)
 {
+    qCDebug(views) << "Enter TermWidgetPage::setSplitStyle";
     splitter->setHandleWidth(1);
 
     for (int i = 1; i < splitter->count(); ++i) {
@@ -127,28 +143,34 @@ void TermWidgetPage::setSplitStyle(DSplitter *splitter)
             //bug#57044 中的分割线颜色，保留的代码对默认主题，和十个内置主题的颜色是正确获取，但是在自定义的颜色获取存在异常，采取如下方式获取
             DPalette pa = DGuiApplicationHelper::instance()->applicationPalette();
             QColor splitBrush = pa.color(DPalette::Highlight);
-            pa.setBrush(DPalette::Background, splitBrush);
+            pa.setBrush(DPalette::Window, splitBrush);
             handle->setPalette(pa);
-            handle->setBackgroundRole(QPalette::Background);
+            handle->setBackgroundRole(QPalette::Window);
             handle->setAutoFillBackground(true);
         }
     }
+    qCDebug(views) << "TermWidgetPage::setSplitStyle finished";
 }
 
 TermWidget *TermWidgetPage::currentTerminal()
 {
+    // qCDebug(views) << "Enter TermWidgetPage::currentTerminal";
     return m_currentTerm;
 }
 
 QString TermWidgetPage::getCurrentTerminalTitle()
 {
-    if (nullptr == m_currentTerm)
+    // qCDebug(views) << "Enter TermWidgetPage::getCurrentTerminalTitle";
+    if (nullptr == m_currentTerm) {
+        qCDebug(views) << "Branch: current terminal is null";
         return "";
+    }
     return m_currentTerm->getTabTitle();
 }
 
 void TermWidgetPage::split(Qt::Orientation orientation)
 {
+    qCDebug(views) << "TermWidgetPage::split - Orientation:" << orientation;
     parentMainWindow()->showPlugin(MainWindow::PLUGIN_TYPE_NONE);
     TermWidget *term = m_currentTerm;
 
@@ -172,9 +194,9 @@ void TermWidgetPage::split(Qt::Orientation orientation)
         setSplitStyle(splitter);
         setCurrentTerminal(newTerm);
     } else {
-    // if there's no splitter, or the orientation is not correct,
-    // create a new splitter, put the 2 terms into the splitter,
-    // and replace the old term with the splitter.
+        // if there's no splitter, or the orientation is not correct,
+        // create a new splitter, put the 2 terms into the splitter,
+        // and replace the old term with the splitter.
         if (splitter) {
             // see above splitter->insertWidget part to know why.
             QList<int> sizes = splitter->sizes();
@@ -203,6 +225,7 @@ void TermWidgetPage::split(Qt::Orientation orientation)
 
 DSplitter *TermWidgetPage::createSubSplit(TermWidget *term, Qt::Orientation orientation)
 {
+    qCDebug(views) << "Enter TermWidgetPage::createSubSplit";
     TermProperties properties(term->workingDirectory());
     term->setParent(nullptr);
     TermWidget *newTerm  = createTerm(properties);
@@ -226,9 +249,10 @@ DSplitter *TermWidgetPage::createSubSplit(TermWidget *term, Qt::Orientation orie
 
 void TermWidgetPage::closeSplit(TermWidget *term, bool hasConfirmed)
 {
-    qInfo() << "TermWidgetPage::closeSplit:" << term->getSessionId();
+    qCInfo(views) << "TermWidgetPage::closeSplit:" << term->getSessionId();
     if (getTerminalCount() > 1) {
         if (!hasConfirmed && term->hasRunningProcess()) {
+            qCDebug(views) << "TermWidgetPage::closeSplit - Showing confirmation dialog";
             showExitConfirmDialog(Utils::CloseType_Terminal, 1, parentMainWindow());
             return;
         }
@@ -249,7 +273,7 @@ void TermWidgetPage::closeSplit(TermWidget *term, bool hasConfirmed)
             setCurrentTerminal(nextTerm);
         }
 
-        // step3, futurer clean the parent splitter if it's empty
+        // step3, further clean the parent splitter if it's empty
         QSplitter *upSplit = qobject_cast<QSplitter *>(parentWidget);
         if (upSplit && upSplit->count() == 0) {
             upSplit->setParent(nullptr);
@@ -257,7 +281,7 @@ void TermWidgetPage::closeSplit(TermWidget *term, bool hasConfirmed)
             upSplit = nullptr;
         }
 
-        qInfo() << "page terminal count =" << getTerminalCount();
+        qCInfo(views) << "page terminal count =" << getTerminalCount();
         /******** Add by ut001000 renfeixiang 2020-08-07:关闭分屏时改变大小，bug#41436***************/
         parentMainWindow()->updateMinHeight();
         return;
@@ -268,6 +292,7 @@ void TermWidgetPage::closeSplit(TermWidget *term, bool hasConfirmed)
 
 void TermWidgetPage::showExitConfirmDialog(Utils::CloseType type, int count, QWidget *parent)
 {
+    qCDebug(views) << "Enter TermWidgetPage::showExitConfirmDialog";
     /******** Modify by ut001000 renfeixiang 2020-06-03:修改 直接调用MainWindow中的showExitConfirmDialog函数中 Begin***************/
     parentMainWindow()->showExitConfirmDialog(type, count, parent);
     /******** Modify by ut001000 renfeixiang 2020-06-03:修改 直接调用MainWindow中的showExitConfirmDialog函数中 End***************/
@@ -295,7 +320,7 @@ void TermWidgetPage::showExitConfirmDialog(Utils::CloseType type, int count, QWi
 
 //    if (type == Utils::CloseType_Terminal) {
 //        connect(dlg, &DDialog::finished, this, [this](int result) {
-//            qInfo() << result;
+//            qCInfo(views) << result;
 //            // 有弹窗消失
 //            Service::instance()->setIsDialogShow(window(), false);
 //            if (result == 1) {
@@ -307,7 +332,7 @@ void TermWidgetPage::showExitConfirmDialog(Utils::CloseType type, int count, QWi
 
 //    if (type == Utils::CloseType_OtherTerminals) {
 //        connect(dlg, &DDialog::finished, this, [this](int result) {
-//            qInfo() << result;
+//            qCInfo(views) << result;
 //            // 有弹窗消失
 //            Service::instance()->setIsDialogShow(window(), false);
 //            if (result == 1) {
@@ -322,16 +347,19 @@ void TermWidgetPage::showExitConfirmDialog(Utils::CloseType type, int count, QWi
 
 const QString TermWidgetPage::identifier()
 {
+    // qCDebug(views) << "Enter TermWidgetPage::identifier";
     return property("TAB_IDENTIFIER_PROPERTY").toString();
 }
 
 void TermWidgetPage::focusCurrentTerm()
 {
+    // qCDebug(views) << "Enter TermWidgetPage::focusCurrentTerm";
     m_currentTerm->setFocus();
 }
 
 void TermWidgetPage::closeOtherTerminal(bool hasConfirmed)
 {
+    qCDebug(views) << "Enter TermWidgetPage::closeOtherTerminal";
     int runningCount = runningTerminalCount() - static_cast<int>(currentTerminal()->hasRunningProcess());
     if (!hasConfirmed && runningCount != 0) {
         showExitConfirmDialog(Utils::CloseType_OtherTerminals, runningCount, parentMainWindow());
@@ -341,7 +369,7 @@ void TermWidgetPage::closeOtherTerminal(bool hasConfirmed)
     QList<TermWidget *> termList = findChildren<TermWidget *>();
     // 终端数量小于2,执行关闭其他窗口操作
     if (termList.count() < 2) {
-        qInfo() << "current window doesn't have other terminal, can't close other terminals.";
+        qCInfo(views) << "current window doesn't have other terminal, can't close other terminals.";
         return;
     }
 
@@ -360,13 +388,13 @@ void TermWidgetPage::closeOtherTerminal(bool hasConfirmed)
 /******** Modify by ut000439 wangpeili 2020-01-07:  修改了计算上下左右判断的方法 ********×****/
 void TermWidgetPage::focusNavigation(Qt::Edge dir)
 {
+    // qCDebug(views) << "Enter TermWidgetPage::focusNavigation";
     QPoint comparPoint = GetComparePoint(currentTerminal(), dir);
     TermWidget *dst = nullptr;
     QList<TermWidget *> termList = findChildren<TermWidget *>();
     //QMap<TermWidget *, QRect> mapTermRect;
     for (TermWidget *term : qAsConst(termList)) {
         if (GetRect(term).contains(comparPoint)) {
-            qInfo() << "yes!" << comparPoint.x() << comparPoint.y();
             dst = term;
             break;
         }
@@ -377,12 +405,13 @@ void TermWidgetPage::focusNavigation(Qt::Edge dir)
 
 int TermWidgetPage::getTerminalCount()
 {
+    // qCDebug(views) << "Enter TermWidgetPage::getTerminalCount";
     return findChildren<TermWidget *>().size();
 }
 
 bool TermWidgetPage::hasHasHorizontalSplit()
 {
-    qInfo() << "start hasHasHorizontalSplit";
+    qCInfo(views) << "start hasHasHorizontalSplit";
     QList<QSplitter *> splitList = findChildren<QSplitter *>();
     for (QSplitter *split : splitList) {
         if (Qt::Vertical == split->orientation()) {
@@ -394,15 +423,17 @@ bool TermWidgetPage::hasHasHorizontalSplit()
 /********************* Modify by ut000439 wangpeili End ************************/
 QRect TermWidgetPage::GetRect(TermWidget *term)
 {
+    // qCDebug(views) << "Enter TermWidgetPage::GetRect";
     QPoint leftTop = term->mapTo(term->window(), QPoint(0, 0));
     QPoint rightBottom = term->mapTo(term->window(), QPoint(term->width(), term->height()));
     QRect rec(leftTop, rightBottom);
-    qInfo() << "leftTop: " << leftTop.x() << leftTop.y() << "rightBottom: " << rightBottom.x() << rightBottom.y();
+    qCInfo(views) << "leftTop: " << leftTop.x() << leftTop.y() << "rightBottom: " << rightBottom.x() << rightBottom.y();
     return rec;
 }
 
 QPoint TermWidgetPage::GetComparePoint(TermWidget *term, Qt::Edge dir)
 {
+    // qCDebug(views) << "Enter TermWidgetPage::GetComparePoint";
     QPoint leftTop = term->mapTo(term->window(), QPoint(0, 0));
     QPoint leftBottom = term->mapTo(term->window(), QPoint(0, term->height()));
     QPoint rightTop = term->mapTo(term->window(), QPoint(term->width(), 0));
@@ -426,6 +457,7 @@ QPoint TermWidgetPage::GetComparePoint(TermWidget *term, Qt::Edge dir)
 
 int TermWidgetPage::runningTerminalCount()
 {
+    // qCDebug(views) << "Enter TermWidgetPage::runningTerminalCount";
     int count = 0;
     QList<TermWidget *> termList = findChildren<TermWidget *>();
     for (TermWidget *term : termList) {
@@ -437,6 +469,7 @@ int TermWidgetPage::runningTerminalCount()
 
 TermProperties TermWidgetPage::createCurrentTerminalProperties()
 {
+    // qCDebug(views) << "Enter TermWidgetPage::createCurrentTerminalProperties";
     TermProperties properties;
 
     TermWidget *term = currentTerminal();
@@ -448,6 +481,7 @@ TermProperties TermWidgetPage::createCurrentTerminalProperties()
 
 void TermWidgetPage::setTerminalOpacity(qreal opacity)
 {
+    // qCDebug(views) << "Enter TermWidgetPage::setTerminalOpacity";
     QList<TermWidget *> termList = findChildren<TermWidget *>();
     for (TermWidget *term : termList)
         term->setTermOpacity(opacity);
@@ -455,6 +489,7 @@ void TermWidgetPage::setTerminalOpacity(qreal opacity)
 
 void TermWidgetPage::setColorScheme(const QString &name)
 {
+    // qCDebug(views) << "Enter TermWidgetPage::setColorScheme";
     QList<TermWidget *> termList = findChildren<TermWidget *>();
     for (TermWidget *term : termList)
         term->setColorScheme(name);
@@ -462,6 +497,7 @@ void TermWidgetPage::setColorScheme(const QString &name)
 
 void TermWidgetPage::sendTextToCurrentTerm(const QString &text, bool isRemoteConnect)
 {
+    // qCDebug(views) << "Enter TermWidgetPage::sendTextToCurrentTerm";
     TermWidget *term = currentTerminal();
     if (term) {
         //标记当前命令是代码中通过sendText发给终端的(而不是用户手动输入的命令)
@@ -472,6 +508,7 @@ void TermWidgetPage::sendTextToCurrentTerm(const QString &text, bool isRemoteCon
 
 void TermWidgetPage::copyClipboard()
 {
+    // qCDebug(views) << "Enter TermWidgetPage::copyClipboard";
     TermWidget *term = currentTerminal();
     if (term)
         term->copyClipboard();
@@ -479,6 +516,7 @@ void TermWidgetPage::copyClipboard()
 
 void TermWidgetPage::pasteClipboard()
 {
+    // qCDebug(views) << "Enter TermWidgetPage::pasteClipboard";
     TermWidget *term = currentTerminal();
     if (term)
         term->pasteClipboard();
@@ -486,6 +524,7 @@ void TermWidgetPage::pasteClipboard()
 
 void TermWidgetPage::zoomInCurrentTierminal()
 {
+    // qCDebug(views) << "Enter TermWidgetPage::zoomInCurrentTierminal";
     TermWidget *term = currentTerminal();
     if (term)
         term->zoomIn();
@@ -493,6 +532,7 @@ void TermWidgetPage::zoomInCurrentTierminal()
 
 void TermWidgetPage::zoomOutCurrentTerminal()
 {
+    // qCDebug(views) << "Enter TermWidgetPage::zoomOutCurrentTerminal";
     TermWidget *term = currentTerminal();
     if (term)
         term->zoomOut();
@@ -500,6 +540,7 @@ void TermWidgetPage::zoomOutCurrentTerminal()
 
 void TermWidgetPage::setFontSize(int fontSize)
 {
+    // qCDebug(views) << "Enter TermWidgetPage::setFontSize";
     QList<TermWidget *> termList = findChildren<TermWidget *>();
     for (TermWidget *term : termList)
         term->setTermFontSize(fontSize);
@@ -507,6 +548,7 @@ void TermWidgetPage::setFontSize(int fontSize)
 
 void TermWidgetPage::setFont(QString fontName)
 {
+    // qCDebug(views) << "Enter TermWidgetPage::setFont";
     QList<TermWidget *> termList = findChildren<TermWidget *>();
     for (TermWidget *term : termList)
         term->setTermFont(fontName);
@@ -514,6 +556,7 @@ void TermWidgetPage::setFont(QString fontName)
 
 void TermWidgetPage::selectAll()
 {
+    // qCDebug(views) << "Enter TermWidgetPage::selectAll";
     TermWidget *term = currentTerminal();
     if (term)
         term->setSelectionAll();
@@ -521,6 +564,7 @@ void TermWidgetPage::selectAll()
 
 void TermWidgetPage::setcursorShape(int shape)
 {
+    // qCDebug(views) << "Enter TermWidgetPage::selectAll";
     QList<TermWidget *> termList = findChildren<TermWidget *>();
     for (TermWidget *term : termList)
         term->setCursorShape(shape);
@@ -528,6 +572,7 @@ void TermWidgetPage::setcursorShape(int shape)
 
 void TermWidgetPage::setBlinkingCursor(bool enable)
 {
+    // qCDebug(views) << "Enter TermWidgetPage::setcursorShape";
     QList<TermWidget *> termList = findChildren<TermWidget *>();
     for (TermWidget *term : termList)
         term->setBlinkingCursor(enable);
@@ -535,6 +580,7 @@ void TermWidgetPage::setBlinkingCursor(bool enable)
 
 void TermWidgetPage::setPressingScroll(bool enable)
 {
+    // qCDebug(views) << "Enter TermWidgetPage::setBlinkingCursor";
     QList<TermWidget *> termList = findChildren<TermWidget *>();
     for (TermWidget *term : termList)
         term->setPressingScroll(enable);
@@ -542,6 +588,7 @@ void TermWidgetPage::setPressingScroll(bool enable)
 
 void TermWidgetPage::showSearchBar(int state)
 {
+    // qCDebug(views) << "Enter TermWidgetPage::showSearchBar";
     /******** Modify by ut001000 renfeixiang 2020-08-28:修改bug 45227,SearchBar没有显示，且不需要显示时，return Begin***************/
     // 沒显示，且不要显示
     if (!m_findBar->isVisible() && state != SearchBar_Show)
@@ -584,6 +631,7 @@ void TermWidgetPage::showSearchBar(int state)
 
 void TermWidgetPage::showRenameTitleDialog()
 {
+    // qCDebug(views) << "Enter TermWidgetPage::showRenameTitleDialog";
     // 弹窗显示
     Service::instance()->setIsDialogShow(window(), true);
     if (nullptr == m_renameDlg) {
@@ -609,6 +657,7 @@ void TermWidgetPage::showRenameTitleDialog()
 
 inline void TermWidgetPage::handleTabRenameDlgFinished()
 {
+    // qCDebug(views) << "Enter TermWidgetPage::handleTabRenameDlgFinished";
     // 弹窗隐藏或消失
     Service::instance()->setIsDialogShow(window(), false);
     m_renameDlg = nullptr;
@@ -616,6 +665,7 @@ inline void TermWidgetPage::handleTabRenameDlgFinished()
 
 void TermWidgetPage::onTermRequestRenameTab(QString newTabName)
 {
+    qCDebug(views) << "Enter TermWidgetPage::onTermRequestRenameTab";
     if (newTabName.isEmpty()) {
         setProperty("TAB_CUSTOM_NAME_PROPERTY", false);
         emit termTitleChanged(m_currentTerm->title());
@@ -629,6 +679,7 @@ void TermWidgetPage::onTermRequestRenameTab(QString newTabName)
 
 void TermWidgetPage::onTermTitleChanged(QString title)
 {
+    qCDebug(views) << "Enter TermWidgetPage::onTermTitleChanged";
     TermWidget *term = qobject_cast<TermWidget *>(sender());
     // 标题内容没变化的话不发，不是当前终端改变，不发
     if (term == m_currentTerm && m_tabTitle != title) {
@@ -639,18 +690,19 @@ void TermWidgetPage::onTermTitleChanged(QString title)
 
 void TermWidgetPage::onTermGetFocus()
 {
+    qCDebug(views) << "Enter TermWidgetPage::onTermGetFocus";
     TermWidget *term = qobject_cast<TermWidget *>(sender());
     setCurrentTerminal(term);
     emit Service::instance()->currentTermChange(m_currentTerm);
-    qInfo() << "onTermGetFocus" << m_currentTerm->getSessionId();
     emit termGetFocus();
 }
 
 void TermWidgetPage::onTermClosed()
 {
+    qCDebug(views) << "Enter TermWidgetPage::onTermClosed";
     TermWidget *w = qobject_cast<TermWidget *>(sender());
     if (!w) {
-        qInfo() << "TermWidgetPage::onTermClosed: Unknown object to handle" << w;
+        qCWarning(views) << "TermWidgetPage::onTermClosed: Unknown object to handle" << w;
         return;
     }
     closeSplit(w);
@@ -658,13 +710,14 @@ void TermWidgetPage::onTermClosed()
 
 void TermWidgetPage::handleFindNext()
 {
-    qInfo() << m_findBar->searchKeytxt();
+    qCDebug(views) << "Enter TermWidgetPage::handleFindNext";
     setMismatchAlert(false);
     m_currentTerm->search(m_findBar->searchKeytxt(), true, true);
 }
 
 void TermWidgetPage::handleFindPrev()
 {
+    qCDebug(views) << "Enter TermWidgetPage::handleFindPrev";
     setMismatchAlert(false);
     m_currentTerm->search(m_findBar->searchKeytxt(), false, false);
 }
@@ -697,6 +750,7 @@ void TermWidgetPage::handleFindPrev()
 
 void TermWidgetPage::handleUpdateSearchKeyword(const QString &keyword)
 {
+    qCDebug(views) << "Enter TermWidgetPage::handleUpdateSearchKeyword";
     setMismatchAlert(false);
     if (keyword.isEmpty()) {
         m_currentTerm->clearSelection();
@@ -708,11 +762,13 @@ void TermWidgetPage::handleUpdateSearchKeyword(const QString &keyword)
 
 void TermWidgetPage::applyTheme()
 {
+    // qCDebug(views) << "Enter TermWidgetPage::applyTheme";
     updateSplitStyle();
 }
 
 void TermWidgetPage::updateSplitStyle()
 {
+    qCDebug(views) << "Enter TermWidgetPage::updateSplitStyle";
     QList<DSplitter *> splitList = findChildren<DSplitter *>();
     for (DSplitter *splitter : qAsConst(splitList))
         setSplitStyle(splitter);
@@ -720,6 +776,7 @@ void TermWidgetPage::updateSplitStyle()
 
 void TermWidgetPage::slotShowPluginChanged(const QString name)
 {
+    qCDebug(views) << "Enter TermWidgetPage::slotShowPluginChanged";
     MainWindow *mainWindow = qobject_cast<MainWindow *>(sender());
     // 判断是否是当前页，不是当前页不用管
     if (mainWindow && mainWindow->currentPage() == this) {
@@ -739,6 +796,7 @@ void TermWidgetPage::slotShowPluginChanged(const QString name)
 
 void TermWidgetPage::slotQuakeHidePlugin()
 {
+    qCDebug(views) << "Enter TermWidgetPage::slotQuakeHidePlugin";
     MainWindow *mainWindow = qobject_cast<MainWindow *>(sender());
     // 判断是否是当前页，不是当前页不用管
     if (mainWindow && mainWindow->currentPage() == this) {
@@ -749,12 +807,13 @@ void TermWidgetPage::slotQuakeHidePlugin()
 
 void TermWidgetPage::setCurrentTerminal(TermWidget *term)
 {
+    qCDebug(views) << "Enter TermWidgetPage::setCurrentTerminal";
     TermWidget *oldTerm = m_currentTerm;
     m_currentTerm = term;
     if (oldTerm != m_currentTerm) {
         m_currentTerm->setFocus();
         // 当前界面切换
-        qInfo() << "m_currentTerm change" << m_currentTerm->getSessionId();
+        qCInfo(views) << "Current terminal change" << m_currentTerm->getSessionId();
         QString tabTitle = term->getTabTitle();
         // 当前标签为空，标签格式不为空 => 未得到term参数，暂不上传数据
         if ((tabTitle == DEFAULT_TAB_TITLE) && !term->getCurrentTabTitleFormat().trimmed().isEmpty())
@@ -767,6 +826,7 @@ void TermWidgetPage::setCurrentTerminal(TermWidget *term)
 
 TermWidget *TermWidgetPage::createTerm(TermProperties properties)
 {
+    qCDebug(views) << "Enter TermWidgetPage::createTerm";
     TermWidget *term = new TermWidget(properties, this);
     connect(term, &TermWidget::termRequestRenameTab, this, &TermWidgetPage::onTermRequestRenameTab);
     connect(term, &TermWidget::termTitleChanged, this, &TermWidgetPage::onTermTitleChanged);
@@ -774,7 +834,7 @@ TermWidget *TermWidgetPage::createTerm(TermProperties properties)
     connect(term, &TermWidget::leftMouseClick, this, &TermWidgetPage::handleLeftMouseClick);
 
     connect(term, &TermWidget::finished, this, &TermWidgetPage::onTermClosed);
-    qInfo() << "create Terminal, sessionId = " << term->getSessionId();
+    qCInfo(views) << "create Terminal, sessionId = " << term->getSessionId();
     // 对标签页重命名设置
     connect(this, &TermWidgetPage::tabTitleFormatChanged, term, &TermWidget::renameTabFormat);
     return term;
@@ -782,11 +842,13 @@ TermWidget *TermWidgetPage::createTerm(TermProperties properties)
 
 inline void TermWidgetPage::handleLeftMouseClick()
 {
+    qCDebug(views) << "Enter TermWidgetPage::handleLeftMouseClick";
     parentMainWindow()->showPlugin(MainWindow::PLUGIN_TYPE_NONE);
 }
 
 void TermWidgetPage::setTextCodec(QTextCodec *codec)
 {
+    qCDebug(views) << "Enter TermWidgetPage::setTextCodec";
     TermWidget *term = currentTerminal();
     if (term)
         term->setTextCodec(codec);
@@ -794,11 +856,13 @@ void TermWidgetPage::setTextCodec(QTextCodec *codec)
 
 void TermWidgetPage::setMismatchAlert(bool alert)
 {
+    qCDebug(views) << "Enter TermWidgetPage::setMismatchAlert";
     m_findBar->setNoMatchAlert(alert);
 }
 
 void TermWidgetPage::resizeEvent(QResizeEvent *event)
 {
+    // qCDebug(views) << "Enter TermWidgetPage::resizeEvent";
     Q_UNUSED(event)
     this->m_findBar->move(width() - SEARCHBAR_RIGHT_MARGIN, 0);
 }

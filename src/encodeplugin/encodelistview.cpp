@@ -21,8 +21,11 @@
 #include <QScroller>
 #include <QPainterPath>
 
+Q_DECLARE_LOGGING_CATEGORY(encodeplugin)
+
 EncodeListView::EncodeListView(QWidget *parent) : DListView(parent), m_encodeModel(new EncodeListModel(this))
 {
+    qCDebug(encodeplugin) << "EncodeListView constructor enter";
     /******** Add by ut001000 renfeixiang 2020-08-14:增加 Begin***************/
     Utils::set_Object_Name(this);
     m_encodeModel->setObjectName("EncodeListModel");
@@ -75,9 +78,11 @@ EncodeListView::EncodeListView(QWidget *parent) : DListView(parent), m_encodeMod
 
 void EncodeListView::initEncodeItems()
 {
+    qCDebug(encodeplugin) << "initEncodeItems enter";
     QList<QByteArray> encodeDataList = m_encodeModel->listData();
     // 遍历编码
     for (int i = 0; i < encodeDataList.size(); i++) {
+        // qCDebug(encodeplugin) << "Loop iteration:" << i;
         QByteArray encodeData = encodeDataList.at(i);
         QString strEncode = QString(encodeData);
         // 构造子项
@@ -90,17 +95,20 @@ void EncodeListView::initEncodeItems()
     // 默认起动选择第一个。
     m_standardModel->item(0)->setCheckState(Qt::Checked);
     m_modelIndexChecked = m_standardModel->index(0, 0);
+    qCDebug(encodeplugin) << "initEncodeItems exit, count:" << encodeDataList.size();
 }
 
 void EncodeListView::focusInEvent(QFocusEvent *event)
 {
+    qCDebug(encodeplugin) << "focusInEvent enter, reason:" << event->reason();
     /** add begin by ut001121 zhangmeng 20200718 for sp3 keyboard interaction*/
     // 记录焦点
     m_foucusReason = event->reason();
 
     // 判断焦点
     if (Qt::TabFocusReason == m_foucusReason || Qt::BacktabFocusReason == m_foucusReason) {
-        qInfo() << __FUNCTION__ << m_foucusReason << "Current Encode:" << m_modelIndexChecked.data().toString();
+        qCInfo(encodeplugin) << "The reason(" << m_foucusReason << ") for the current focus."
+                << "The encoding format(" << m_modelIndexChecked.data().toString() <<") in which focus is currently obtained.";
         setCurrentIndex(m_modelIndexChecked);
     }
     /** add end by ut001121 zhangmeng 20200718 */
@@ -109,15 +117,18 @@ void EncodeListView::focusInEvent(QFocusEvent *event)
 
 void EncodeListView::focusOutEvent(QFocusEvent *event)
 {
+    // qCDebug(encodeplugin) << "Enter focusOutEvent";
     /** add by ut001121 zhangmeng 20200718 for sp3 keyboard interaction*/
     // mod by ut001121 zhangmeng 20200731 设置无效焦点原因 修复BUG40390
     m_foucusReason = INVALID_FOCUS_REASON;
 
+    // qCDebug(encodeplugin) << "focusOutEvent exit";
     DListView::focusOutEvent(event);
 }
 
 void EncodeListView::resizeEvent(QResizeEvent *event)
 {
+    // qCDebug(encodeplugin) << "Enter resizeEvent";
     /***add by ut001121 zhangmeng 20200701 修改滚动条高度,解决滚动条被窗口特效圆角切割的问题***/
     verticalScrollBar()->setFixedHeight(height() - 10);
 
@@ -126,29 +137,37 @@ void EncodeListView::resizeEvent(QResizeEvent *event)
 
 void EncodeListView::keyPressEvent(QKeyEvent *event)
 {
+    // qCDebug(encodeplugin) << "Enter keyPressEvent";
     /** add begin ut001121 zhangmeng 20200718 for sp3 keyboard interaction */
     switch (event->key()) {
     case Qt::Key_Space:
+        qCDebug(encodeplugin) << "Switch case: Qt::Key_Space";
         //空格键选中子项
         onListViewClicked(currentIndex());
         return;
     case Qt::Key_Escape:
+        qCDebug(encodeplugin) << "Switch case: Qt::Key_Escape";
         //ESC键退出插件
         emit focusOut();
         break;
     case Qt::Key_Up:
+        qCDebug(encodeplugin) << "Switch case: Qt::Key_Up";
         //上键到顶发出提示音
         if (0 == currentIndex().row()) {
+            qCDebug(encodeplugin) << "currentIndex row is 0";
             DBusManager::callSystemSound();
         }
         break;
     case Qt::Key_Down:
+        qCDebug(encodeplugin) << "Switch case: Qt::Key_Down";
         //下键到底发出提示音
         if (m_encodeModel->listData().size() - 1 == currentIndex().row()) {
+            qCDebug(encodeplugin) << "currentIndex row is at bottom";
             DBusManager::callSystemSound();
         }
         break;
     default:
+        qCDebug(encodeplugin) << "Switch case: default";
         break;
     }
     /** add end ut001121 zhangmeng 20200718 */
@@ -157,8 +176,10 @@ void EncodeListView::keyPressEvent(QKeyEvent *event)
 
 void EncodeListView::mousePressEvent(QMouseEvent *event)
 {
+    // qCDebug(encodeplugin) << "Enter mousePressEvent";
     /** add by ut001121 zhangmeng 20200811 for sp3 Touch screen interaction */
     if (Qt::MouseEventSynthesizedByQt == event->source()) {
+        // qCDebug(encodeplugin) << "MouseEventSynthesizedByQt";
         m_touchPressPosY = event->y();
         m_touchSlideMaxY = -1;
     }
@@ -169,10 +190,12 @@ void EncodeListView::mousePressEvent(QMouseEvent *event)
 
 void EncodeListView::mouseReleaseEvent(QMouseEvent *event)
 {
+    // qCDebug(encodeplugin) << "Enter mouseReleaseEvent";
     /** add begin by ut001121 zhangmeng 20200811 for sp3 Touch screen interaction */
     /***mod by ut001121 zhangmeng 20200813 触摸屏下移动距离超过COORDINATE_ERROR_Y则认为是滑动事件 修复BUG42261***/
     if (Qt::MouseEventSynthesizedByQt == event->source()
             && m_touchSlideMaxY > ENCODE_COORDINATE_ERROR_Y) {
+        qCDebug(encodeplugin) << "MouseEventSynthesizedByQt and touchSlideMaxY > COORDINATE_ERROR_Y";
         event->accept();
         return;
     }
@@ -184,9 +207,12 @@ void EncodeListView::mouseReleaseEvent(QMouseEvent *event)
 
 void EncodeListView::mouseMoveEvent(QMouseEvent *event)
 {
+    // qCDebug(encodeplugin) << "Enter mouseMoveEvent";
     /***add begin by ut001121 zhangmeng 20200813 记录触摸屏下移动最大距离 修复BUG42261***/
-    if (Qt::MouseEventSynthesizedByQt == event->source())
+    if (Qt::MouseEventSynthesizedByQt == event->source()) {
+        qCDebug(encodeplugin) << "MouseEventSynthesizedByQt in mouseMoveEvent";
         m_touchSlideMaxY = qMax(m_touchSlideMaxY, qAbs(event->y() - m_touchPressPosY));
+    }
     /***add end by ut001121***/
 
     return DListView::mouseMoveEvent(event);
@@ -194,15 +220,19 @@ void EncodeListView::mouseMoveEvent(QMouseEvent *event)
 
 void EncodeListView::onListViewClicked(const QModelIndex &index)
 {
+    qCDebug(encodeplugin) << "onListViewClicked enter, row:" << index.row();
     if (!index.isValid()) {
-        qInfo() << __FUNCTION__ << "Error:" << index;
+        qCWarning(encodeplugin) << "The current encoding format("<< index << ") is incorrect.";
         return;
     }
     QStandardItemModel *model = qobject_cast<QStandardItemModel *>(this->model());
-    if (nullptr == model)
+    if (nullptr == model) {
+        qCDebug(encodeplugin) << "model is null";
         return;
+    }
 
-    qInfo() << __FUNCTION__ << "Old:" << m_modelIndexChecked.data().toString() << "New:" << index.data().toString();
+    qCInfo(encodeplugin) << "The encoding format(" <<  m_modelIndexChecked.data().toString() << ") selected last time."
+            << "The encoding format(" <<  index.data().toString()<< ") selected this time.";
 
     //当前Checked子项改为Unchecked状态
     DStandardItem *modelItem = dynamic_cast<DStandardItem *>(model->item(m_modelIndexChecked.row()));
@@ -219,33 +249,43 @@ void EncodeListView::onListViewClicked(const QModelIndex &index)
 
 void EncodeListView::checkEncode(QString encode)
 {
+    qCDebug(encodeplugin) << "checkEncode enter, encode:" << encode;
     // 判断是否是当前窗口
     if (this->isActiveWindow()) {
+        qCDebug(encodeplugin) << "window is active";
         QStandardItemModel *model = qobject_cast<QStandardItemModel *>(this->model());
-        if (nullptr == model)
+        if (nullptr == model) {
+            qCDebug(encodeplugin) << "model is null in checkEncode";
             return;
+        }
         // 遍历编码
         for (int row = 0; row < model->rowCount(); row++) {
+            // qCDebug(encodeplugin) << "Loop iteration:" << row;
             QModelIndex modelindex = model->index(row, 0);
             DStandardItem *modelItem = dynamic_cast<DStandardItem *>(model->item(row));
             // 判断编码是否一致
             if (modelindex.data().toString() == encode) {
+                // qCDebug(encodeplugin) << "encoding matches";
                 //设置Checked状态
                 modelItem->setCheckState(Qt::Checked);
                 m_modelIndexChecked = modelindex;
                 scrollTo(modelindex);
             } else {
+                // qCDebug(encodeplugin) << "encoding doesn't match";
                 //设置Unchecked状态
                 modelItem->setCheckState(Qt::Unchecked);
             }
         }
     }
+    qCDebug(encodeplugin) << "checkEncode exit";
 }
 
 void EncodeDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt,
                            const QModelIndex &index) const
 {
+    // qCDebug(encodeplugin) << "Enter EncodeDelegate::paint";
     if (index.isValid()) {
+        // qCDebug(encodeplugin) << "index is valid";
         painter->save();
         painter->setRenderHint(QPainter::Antialiasing, true);
 
@@ -280,6 +320,7 @@ void EncodeDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt,
 
         // 悬浮状态
         if (option.state & QStyle::State_MouseOver) {
+            // qCDebug(encodeplugin) << "mouse over state";
             /*** mod begin by ut001121 zhangmeng 20200729 鼠标悬浮在编码插件时使用突出背景处理 修复BUG40078***/
             DPalette pa = DPaletteHelper::instance()->palette(m_parentView);
             DStyleHelper styleHelper;
@@ -288,6 +329,7 @@ void EncodeDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt,
             painter->setBrush(QBrush(fillColor));
             painter->fillPath(path, fillColor);
         } else {
+            // qCDebug(encodeplugin) << "normal state";
             DPalette pa = DPaletteHelper::instance()->palette(m_parentView);
             DStyleHelper styleHelper;
             QColor fillColor = styleHelper.getColor(static_cast<const QStyleOption *>(&option), pa, DPalette::ItemBackground);
@@ -316,9 +358,11 @@ void EncodeDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt,
         Qt::FocusReason focusReason = qobject_cast<EncodeListView *>(m_parentView)->getFocusReason();
         // mod by ut001121 zhangmeng 20200731 有效效焦点原因下绘制边框 修复BUG40390
         if ((option.state & QStyle::State_Selected) && (focusReason != INVALID_FOCUS_REASON)) {
+            // qCDebug(encodeplugin) << "drawing border for selected item";
             QPen framePen;
             DPalette pax = DPaletteHelper::instance()->palette(m_parentView);
             if (option.state & QStyle::State_Selected) {
+                // qCDebug(encodeplugin) << "state is selected";
                 painter->setOpacity(1);
                 framePen = QPen(pax.color(DPalette::Highlight), 2);
             }
@@ -331,6 +375,7 @@ void EncodeDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt,
         const QStandardItemModel *model = qobject_cast<const QStandardItemModel *>(index.model());
         DStandardItem *modelItem = dynamic_cast<DStandardItem *>(model->item(index.row()));
         if (modelItem->checkState() & Qt::CheckState::Checked) {
+            // qCDebug(encodeplugin) << "item is checked";
             // 计算区域
             QRect editIconRect = QRect(bgRect.right() - checkIconSize - 6, bgRect.top() + (bgRect.height() - checkIconSize) / 2,
                                        checkIconSize, checkIconSize);
@@ -343,12 +388,17 @@ void EncodeDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt,
             opt.state = opt.state & ~QStyle::State_HasFocus;
             opt.state |= QStyle::State_On;
 
-            // 绘画对勾
+            // 绘画对勾 PE_IndicatorItemViewItemCheck
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
             style->drawPrimitive(QStyle::PE_IndicatorViewItemCheck, &opt, painter, widget);
+#else
+            style->drawPrimitive(QStyle::PE_IndicatorItemViewItemCheck, &opt, painter, widget);
+#endif
         }
 
         painter->restore();
     } else {
+        // qCDebug(encodeplugin) << "index is not valid, using default paint";
         DStyledItemDelegate::paint(painter, opt, index);
     }
 }
@@ -356,6 +406,7 @@ void EncodeDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt,
 QSize EncodeDelegate::sizeHint(const QStyleOptionViewItem &option,
                                const QModelIndex &index) const
 {
+    // qCDebug(encodeplugin) << "Enter EncodeDelegate::sizeHint";
     Q_UNUSED(index)
 
 #ifdef DTKWIDGET_CLASS_DSizeMode

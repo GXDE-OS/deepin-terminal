@@ -34,6 +34,7 @@
 #include "kptydevice.h"
 
 #include <csignal>
+#include <memory>
 
 class KPtyDevice;
 
@@ -144,10 +145,13 @@ protected:
     /**
      * @reimp
      */
-    void setupChildProcess() override;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+   void setupChildProcess() override;
+#endif
 
 private:
     Q_PRIVATE_SLOT(d_func(), void _k_onStateChanged(QProcess::ProcessState))
+    std::unique_ptr<KPtyProcessPrivate> const d_ptr;
 };
 
 
@@ -155,11 +159,9 @@ private:
 // private data //
 //////////////////
 
-class KPtyProcessPrivate : public KProcessPrivate {
+class KPtyProcessPrivate {
 public:
-    KPtyProcessPrivate() :
-        ptyChannels(KPtyProcess::NoChannels),
-        addUtmp(false)
+    KPtyProcessPrivate()
     {
     }
 
@@ -169,9 +171,9 @@ public:
             pty->logout();
     }
 
-    KPtyDevice *pty;
-    KPtyProcess::PtyChannels ptyChannels;
-    bool addUtmp : 1;
+    std::unique_ptr<KPtyDevice> pty;
+    KPtyProcess::PtyChannels ptyChannels = KPtyProcess::NoChannels;
+    bool addUtmp = false;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(KPtyProcess::PtyChannels)

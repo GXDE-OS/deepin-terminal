@@ -336,7 +336,13 @@
                             "text": "Copy on select",
                             "default": true
                         },
-			    {
+                        {
+                            "key": "allow_osc52",
+                            "type": "checkbox",
+                            "text": "Allow OSC52 clipboard access",
+                            "default": false
+                        },
+                        {
                             "key": "set_cursor_position",
                             "type": "checkbox",
                             "text": "Allow Ctrl + left mouse click to set cursor position",
@@ -373,6 +379,12 @@
                             "key": "zoom_on_ctrl_scrollwheel",
                             "type": "checkbox",
                             "text": "Allow Ctrl+scrollwheel to zoom text size",
+                            "default": true
+                        },
+                        {
+                            "key": "opacity_on_ctrl_shift_updown",
+                            "type": "checkbox",
+                            "text": "Allow Ctrl+Shift+Up/Down to adjust opacity",
                             "default": true
                         }
                     ]

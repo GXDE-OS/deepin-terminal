@@ -485,6 +485,21 @@ signals:
      */
     void cursorChanged(KeyboardCursorShape cursorShape, bool blinkingCursorEnabled);
 
+    /**
+     * @brief OSC52 clipboard operation request
+     *
+     * Emitted when a terminal program sends OSC52 escape sequence.
+     * Format: ESC ] 52 ; target ; base64-data BEL
+     *
+     * @param target Clipboard target:
+     *        - 'c' = CLIPBOARD (system clipboard, Ctrl+C/V)
+     *        - 'p' = PRIMARY (X11 primary selection, middle-click paste)
+     *        - 's' = SECONDARY (X11 secondary selection)
+     *        - '0' = All clipboards
+     * @param base64Data Base64-encoded clipboard data
+     */
+    void osc52ClipboardRequest(char target, const QString &base64Data);
+
 protected:
     virtual void setMode(int mode) = 0;
     virtual void resetMode(int mode) = 0;
@@ -530,6 +545,14 @@ protected:
     /*const */KeyboardTranslator *_keyTranslator; // the keyboard layout
     /********************* Modify by ut000610 daizhengwen End ************************/
 
+    /**
+       @brief 检测当前iconv使用的GB18030编码是否为2005标准，2005标准强制使用上层补丁版本
+            通过检测2005和2022编码转的差异，以附录D中的编码为例验证
+            2005标准 0xFE51 --> \u20087
+            2022标准 0xFE51 --> \uE816
+       @return iconv使用GB18030编码是否为2005标准，默认返回true
+     */
+    bool detectIconvUse2005Standard();
 protected slots:
     /**
      * Schedules an update of attached views.

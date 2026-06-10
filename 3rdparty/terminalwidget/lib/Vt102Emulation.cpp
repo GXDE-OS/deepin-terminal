@@ -44,7 +44,7 @@
 // Qt
 #include <QEvent>
 #include <QKeyEvent>
-#include <QByteRef>
+// #include <QByteRef>
 #include <QDebug>
 
 // KDE
@@ -205,6 +205,12 @@ void Vt102Emulation::addToCurrentToken(wchar_t cc)
 {
   tokenBuffer[tokenBufferPos] = cc;
   tokenBufferPos = qMin(tokenBufferPos+1,MAX_TOKEN_LENGTH-1);
+
+  // ========== OSC52: Check accumulated buffer size ==========
+  if (_osc52InProgress && tokenBufferPos >= MAX_TOKEN_LENGTH - 100) {
+      handleOSC52Chunk();
+  }
+  // ==========================================================
 }
 
 // Character Class flags used while decoding
@@ -266,7 +272,7 @@ void Vt102Emulation::initTokenizer()
 #define les(P,L,C) (p == (P) && s[L] < 256 && (charClass[s[(L)]] & (C)) == (C))
 #define eec(C)     (p >=  3  && cc == (C))
 #define ees(C)     (p >=  3  && cc < 256 && (charClass[cc] & (C)) == (C))
-#define eps(C)     (p >=  3  && s[2] != '?' && s[2] != '!' && s[2] != '>' && cc < 256 && (charClass[cc] & (C)) == (C))
+#define eps(C)     (p >=  3  && s[2] != '?' && s[2] != '!' && s[2] != '>' && s[2] != '<' && s[2] != '=' && cc < 256 && (charClass[cc] & (C)) == (C))
 #define epp( )     (p >=  3  && s[2] == '?')
 #define epe( )     (p >=  3  && s[2] == '!')
 #define egt( )     (p >=  3  && s[2] == '>')
@@ -278,12 +284,29 @@ void Vt102Emulation::initTokenizer()
 #define CNTL(c) ((c)-'@')
 #define ESC 27
 #define DEL 127
+#define BEL 7
 
 // process an incoming unicode character
 void Vt102Emulation::receiveChar(wchar_t cc)
 {
   if (cc == DEL)
     return; //VT100: ignore.
+
+  // ==========  OSC52: Direct path for subsequent chunks ==========
+  // If OSC52 is in progress and past first chunk, directly accumulate
+  if (_osc52InProgress && cc != BEL) {
+      addToCurrentToken(cc);
+      // Chunk boundary check is handled inside addToCurrentToken()
+      return;
+  }
+  // ========== OSC52: Check for BEL end ==========
+  // CRITICAL: Remove Xpe check - BEL alone should end OSC52 sequence
+  if (cc == BEL && _osc52InProgress) {
+      handleOSC52End(cc);
+      resetTokenizer();
+      return;
+  }
+  // =======================================================
 
   if (ces(CTL))
   {
@@ -317,17 +340,42 @@ void Vt102Emulation::receiveChar(wchar_t cc)
     if (lec(1,0,ESC)) { return; }
     if (lec(1,0,ESC+128)) { s[0] = ESC; receiveChar('['); return; }
     if (les(2,1,GRP)) { return; }
-    if (Xte         ) { processWindowAttributeChange(); resetTokenizer(); return; }
-    if (Xpe         ) { prevCC = cc; return; }
+    // ========== OSC: Unified handling ==========
+    if (Xpe && !_osc52InProgress) {
+        // Check 1: OSC52 start detection
+        if (isOSC52Start()) {
+            startOSC52();
+            // Don't return - continue to accumulate
+        }
+        // Check 2: OSC end (BEL or ST)
+        else if (cc == BEL || (prevCC == ESC && cc == 0x5C)) {
+            processWindowAttributeChange();
+            resetTokenizer();
+            return;
+        }
+        // Check 3: Normal OSC - accumulate
+        else {
+            prevCC = cc;
+            return;
+        }
+    }
+    // ============================================
     if (lec(3,2,'?')) { return; }
     if (lec(3,2,'>')) { return; }
     if (lec(3,2,'!')) { return; }
+    if (lec(3,2,'<')) { return; }
+    if (lec(3,2,'=')) { return; }
     if (lun(       )) { processToken( TY_CHR(), applyCharset(cc), 0);   resetTokenizer(); return; }
     if (lec(2,0,ESC)) { processToken( TY_ESC(s[1]), 0, 0);              resetTokenizer(); return; }
     if (les(3,1,SCS)) { processToken( TY_ESC_CS(s[1],s[2]), 0, 0);      resetTokenizer(); return; }
     if (lec(3,1,'#')) { processToken( TY_ESC_DE(s[2]), 0, 0);           resetTokenizer(); return; }
     if (eps(    CPN)) { processToken( TY_CSI_PN(cc), argv[0],argv[1]);  resetTokenizer(); return; }
     if (esp(       )) { return; }
+    // DECRQM: CSI Pd $ p — absorb '$' intermediate byte and dispatch on 'p'
+    // WARNING: This absorbs '$' for all CSI sequences, not just DECRQM.
+    // Other CSI sequences using '$' as final byte (e.g., DECCRA, DECSERA)
+    // would be affected if sent, though applications rarely send them.
+    if (eec('$')) { return; } // absorb '$' and wait for final byte
     if (lec(5, 4, 'q') && s[3] == ' ') {
       processToken( TY_CSI_PS_SP(cc, argv[0]), argv[0], 0);
       resetTokenizer();
@@ -351,6 +399,8 @@ void Vt102Emulation::receiveChar(wchar_t cc)
             processToken( TY_CSI_PR(cc,argv[i]), 0, 0);
         else if (egt())
             processToken( TY_CSI_PG(cc), 0, 0); // spec. case for ESC]>0c or ESC]>c
+        else if (p >= 3 && (s[2] == '<' || s[2] == '='))
+            ; // silently ignore CSI < and CSI = sequences (e.g. Kitty keyboard pop)
         else if (cc == 'm' && argc - i >= 4 && (argv[i] == 38 || argv[i] == 48) && argv[i+1] == 2)
         {
             // ESC[ ... 48;2;<red>;<green>;<blue> ... m -or- ESC[ ... 38;2;<red>;<green>;<blue> ... m
@@ -828,6 +878,43 @@ void Vt102Emulation::processToken(int token, wchar_t p, int q)
     //FIXME: weird DEC reset sequence
     case TY_CSI_PE('p'      ) : /* IGNORED: reset         (        ) */ break;
 
+    // DECRQM — Request Mode (Host To Terminal)
+    // When the '$' intermediate byte is absorbed by the tokenizer, the natural
+    // for-loop dispatch produces TY_CSI_PR('p',N) for DEC private modes and
+    // TY_CSI_PS('p',N) for ANSI modes.
+    //
+    // ANSI mode queries: CSI Pd $ p  →  TY_CSI_PS('p', Pd)
+    case TY_CSI_PS('p',   2) : reportAnsiMode( 2, 2); break; // KAM (Keyboard Action) - Not supported
+    case TY_CSI_PS('p',   4) : reportAnsiMode( 4, _currentScreen->getMode(MODE_Insert) ? 1 : 2); break; // IRM
+    case TY_CSI_PS('p',  10) : reportAnsiMode(10, 4); break; // HEM (Horizontal Editing) - Permanently reset
+    case TY_CSI_PS('p',  20) : reportAnsiMode(20, getMode(MODE_NewLine) ? 1 : 2); break; // LNM
+
+    // DEC private mode queries: CSI ? Pd $ p  →  TY_CSI_PR('p', Pd)
+    case TY_CSI_PR('p',   1) : reportDecMode(  1, getMode(MODE_AppCuKeys) ? 1 : 2); break; // DECCKM
+    case TY_CSI_PR('p',   2) : reportDecMode(  2, getMode(MODE_Ansi) ? 1 : 2); break; // DECANM
+    case TY_CSI_PR('p',   3) : reportDecMode(  3, getMode(MODE_132Columns) ? 1 : 2); break; // DECCOLM
+    case TY_CSI_PR('p',   4) : reportDecMode(  4, 4); break; // DECSCLM (Scrolling) - Permanently reset
+    case TY_CSI_PR('p',   5) : reportDecMode(  5, _currentScreen->getMode(MODE_Screen) ? 1 : 2); break; // DECSCNM
+    case TY_CSI_PR('p',   6) : reportDecMode(  6, _currentScreen->getMode(MODE_Origin) ? 1 : 2); break; // DECOM
+    case TY_CSI_PR('p',   7) : reportDecMode(  7, _currentScreen->getMode(MODE_Wrap) ? 1 : 2); break; // DECAWM
+    case TY_CSI_PR('p',   8) : reportDecMode(  8, 4); break; // DECARM (Autorepeat) - Permanently reset
+    case TY_CSI_PR('p',   9) : reportDecMode(  9, 4); break; // DECINLM (Interlace) - Permanently reset
+    case TY_CSI_PR('p',  10) : reportDecMode( 10, 4); break; // DECEDM (Edit Mode) - Permanently reset
+    case TY_CSI_PR('p',  25) : reportDecMode( 25, _currentScreen->getMode(MODE_Cursor) ? 1 : 2); break; // DECTCEM
+    case TY_CSI_PR('p',  12) : reportDecMode( 12, 4); break; // att610 (Cursor blink) - Permanently reset
+    case TY_CSI_PR('p',  47) : reportDecMode( 47, getMode(MODE_AppScreen) ? 1 : 2); break; // Alt screen
+    case TY_CSI_PR('p', 1000) : reportDecMode(1000, getMode(MODE_Mouse1000) ? 1 : 2); break; // VT200 mouse
+    case TY_CSI_PR('p', 1034) : reportDecMode(1034, 4); break; // interpret Meta - Permanently reset
+    case TY_CSI_PR('p', 1002) : reportDecMode(1002, getMode(MODE_Mouse1002) ? 1 : 2); break; // Cell motion mouse
+    case TY_CSI_PR('p', 1003) : reportDecMode(1003, getMode(MODE_Mouse1003) ? 1 : 2); break; // All motion mouse
+    case TY_CSI_PR('p', 1004) : reportDecMode(1004, _reportFocusEvents ? 1 : 2); break; // Focus events
+    case TY_CSI_PR('p', 1005) : reportDecMode(1005, getMode(MODE_Mouse1005) ? 1 : 2); break; // UTF-8 mouse
+    case TY_CSI_PR('p', 1006) : reportDecMode(1006, getMode(MODE_Mouse1006) ? 1 : 2); break; // SGR mouse
+    case TY_CSI_PR('p', 1015) : reportDecMode(1015, getMode(MODE_Mouse1015) ? 1 : 2); break; // URXVT mouse
+    case TY_CSI_PR('p', 1047) : reportDecMode(1047, getMode(MODE_AppScreen) ? 1 : 2); break; // Alt screen (xterm)
+    case TY_CSI_PR('p', 1049) : reportDecMode(1049, getMode(MODE_AppScreen) ? 1 : 2); break; // Alt screen + cursor
+    case TY_CSI_PR('p', 2004) : reportDecMode(2004, getMode(MODE_BracketedPaste) ? 1 : 2); break; // Bracketed paste
+
     //FIXME: when changing between vt52 and ansi mode evtl do some resetting.
     case TY_VT52('A'      ) : _currentScreen->cursorUp             (         1); break; //VT52
     case TY_VT52('B'      ) : _currentScreen->cursorDown           (         1); break; //VT52
@@ -917,9 +1004,157 @@ void Vt102Emulation::reportTerminalParms(int p)
   sendString(tmp);
 }
 
+// ========== OSC52 Clipboard Implementation ==========
+
+bool Vt102Emulation::isOSC52Start() const
+{
+    // Check if tokenBuffer starts with "ESC ] 5 2 ;"
+    // tokenBuffer layout: [0]=ESC, [1]=']', [2]='5', [3]='2', [4]=';'
+    return (tokenBufferPos >= 5 &&
+            tokenBuffer[2] == L'5' &&
+            tokenBuffer[3] == L'2' &&
+            tokenBuffer[4] == L';');
+}
+
+char Vt102Emulation::extractOSC52Target() const
+{
+    // tokenBuffer layout: ESC ] 5 2 ; target ; base64...
+    //                                     ↑
+    //                                  position 5
+    if (tokenBufferPos > 5) {
+        return static_cast<char>(tokenBuffer[5]);
+    }
+    return 'c'; // Default to CLIPBOARD
+}
+
+QString Vt102Emulation::extractOSC52Data() const
+{
+    // tokenBuffer layout: ESC ] 5 2 ; target ; base64...
+    //                                       ↑
+    //                                    position 7 (data start for first chunk)
+    // For subsequent chunks, data starts at position 0
+    int dataStart = _osc52IsFirstChunk ? 7 : 0;
+    if (tokenBufferPos > dataStart) {
+        return QString::fromWCharArray(tokenBuffer + dataStart, tokenBufferPos - dataStart);
+    }
+    return QString();
+}
+
+void Vt102Emulation::startOSC52()
+{
+    _osc52InProgress = true;
+    _osc52Target = extractOSC52Target();
+    _osc52DataBuffer.clear();
+    _osc52IsFirstChunk = true;  // Mark as first chunk
+
+    qInfo() << "OSC52: Start, target=" << _osc52Target;
+}
+
+void Vt102Emulation::handleOSC52End(wchar_t cc)
+{
+    // cc should be BEL (7)
+    Q_ASSERT(cc == BEL);
+    Q_UNUSED(cc);
+
+    // Extract base64 data from current tokenBuffer
+    QString base64Data;
+    if (_osc52IsFirstChunk) {
+        // Single chunk OSC52: skip header (7 chars), BEL was not added to buffer
+        if (tokenBufferPos > 7) {
+            base64Data = QString::fromWCharArray(tokenBuffer + 7, tokenBufferPos - 7);
+        }
+    } else {
+        // Multi-chunk OSC52 final chunk: tokenBuffer contains ONLY base64 data
+        // BEL was not added to buffer, no need to subtract
+        if (tokenBufferPos > 0) {
+            base64Data = QString::fromWCharArray(tokenBuffer, tokenBufferPos);
+        }
+    }
+
+    // Accumulate to buffer
+    _osc52DataBuffer += base64Data;
+
+    // ========== OSC52: Check final buffer size ==========
+    if (_osc52DataBuffer.size() >= MAX_OSC52_BUFFER) {
+        qWarning() << "OSC52: Buffer overflow (>=" << MAX_OSC52_BUFFER
+                   << "bytes), rejecting";
+        _osc52DataBuffer.clear();
+        _osc52InProgress = false;
+        _osc52IsFirstChunk = false;
+        return;
+    }
+    // ====================================================
+
+    // Emit signal with complete data
+    emit osc52ClipboardRequest(_osc52Target, _osc52DataBuffer);
+
+    qInfo() << "OSC52: Complete, sent" << _osc52DataBuffer.size() << "bytes";
+
+    // Clear state
+    _osc52DataBuffer.clear();
+    _osc52InProgress = false;
+    _osc52IsFirstChunk = false;
+}
+
+void Vt102Emulation::handleOSC52Chunk()
+{
+    // ========== OSC52: Check buffer size limit ==========
+    if (_osc52DataBuffer.size() >= MAX_OSC52_BUFFER) {
+        qWarning() << "OSC52: Buffer overflow (>=" << MAX_OSC52_BUFFER
+                   << "bytes), rejecting";
+        _osc52DataBuffer.clear();
+        _osc52InProgress = false;
+        _osc52IsFirstChunk = false;
+        return;
+    }
+    // ====================================================
+
+    // Extract current chunk from tokenBuffer
+    QString base64Data = extractOSC52Data();
+    _osc52DataBuffer += base64Data;
+
+    // Mark as not first chunk for subsequent chunks
+    _osc52IsFirstChunk = false;
+
+    // ========== Add resetTokenizer ==========
+    resetTokenizer();  // 清空 tokenBuffer，准备接收新数据
+    // ========================================
+    // Don't clear state, continue receiving
+}
+
+// ====================================================
+
 void Vt102Emulation::reportStatus()
 {
   sendString("\033[0n"); //VT100. Device status report. 0 = Ready.
+}
+
+// DECRPM — Report Mode (Terminal To Host), response to DECRQM
+// Responds to an ANSI mode query (CSI Pd $ p) with: CSI Pd ; Pm $ y
+void Vt102Emulation::reportAnsiMode(int mode, int status)
+{
+    const size_t sz = 32;
+    char tmp[sz];
+    const size_t r = snprintf(tmp, sz, "\033[%d;%d$y", mode, status);
+    if (r >= sz) {
+        qWarning("Vt102Emulation::reportAnsiMode: Buffer too small\n");
+        return;
+    }
+    sendString(tmp);
+}
+
+// DECRPM — Report Mode (Terminal To Host), response to DECRQM
+// Responds to a DEC private mode query (CSI ? Pd $ p) with: CSI ? Pd ; Pm $ y
+void Vt102Emulation::reportDecMode(int mode, int status)
+{
+    const size_t sz = 32;
+    char tmp[sz];
+    const size_t r = snprintf(tmp, sz, "\033[?%d;%d$y", mode, status);
+    if (r >= sz) {
+        qWarning("Vt102Emulation::reportDecMode: Buffer too small\n");
+        return;
+    }
+    sendString(tmp);
 }
 
 void Vt102Emulation::reportAnswerBack()
@@ -972,8 +1207,8 @@ void Vt102Emulation::sendMouseEvent( int cb, int cx, int cy , int eventType )
             // coordinate+32, no matter what the locale is. We could easily
             // convert manually, but QString can also do it for us.
             QChar coords[2];
-            coords[0] = cx + 0x20;
-            coords[1] = cy + 0x20;
+            coords[0] = static_cast<ushort>(cx + 0x20);
+            coords[1] = static_cast<ushort>(cy + 0x20);
             QString coordsStr = QString(coords, 2);
             QByteArray utf8 = coordsStr.toUtf8();
             snprintf(command, sizeof(command), "\033[M%c%s", cb + 0x20, utf8.constData());

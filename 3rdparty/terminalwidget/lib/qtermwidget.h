@@ -144,6 +144,10 @@ public:
     void setTrackOutput(bool enable);
     /********************* Modify by n014361 wangpeili End ************************/
 
+    /******** Modify for smart scroll: 检查是否在输出末尾 ****************/
+    bool isAtEndOfOutput() const;
+    /********************* Modify for smart scroll End ************************/
+
     // Send some text to terminal
     void sendText(const QString &text);
 
@@ -273,11 +277,13 @@ public:
     void setDrawLineChars(bool drawLineChars);
 
     void setBoldIntense(bool boldIntense);
+    
+    void enableSetCursorPosition(bool enable);
 
-    // 获取是否允许输出时滚动
+    //Add by dzw1995 2026-04-03 获取是否允许输出时滚动
     bool getIsAllowScroll() const;
 
-    // 设置是否允许输出时滚动
+    //Add by dzw1995 2026-04-03 设置是否允许输出时滚动
     void setIsAllowScroll(bool isAllowScroll);
 
     //Add by ut001000 renfeixiang 2020-12-02 当搜索框出现时，设置m_bHasSelect为false,
@@ -346,6 +352,11 @@ signals:
     // 标签标题参数改变 dzw 2020-12-2
     void titleArgsChange(QString key, QString value);
 
+    /**
+     * @brief Forward OSC52 clipboard request from Emulation
+     */
+    void osc52ClipboardRequest(char target, const QString &base64Data);
+
 public slots:
     // Copy selection to clipboard
     void copyClipboard();
@@ -390,6 +401,8 @@ protected slots:
     void selectionChanged(bool textSelected);
 
 private slots:
+    // Handle Ctrl+Mouse click cursor reposition request from TerminalDisplay
+    void onChangedCursorPosition(int count);
     void matchFound(int startColumn, int startLine, int endColumn, int endLine, int lastBackwardsPosition, int loseChinese, int matchChinese);
 
     /**

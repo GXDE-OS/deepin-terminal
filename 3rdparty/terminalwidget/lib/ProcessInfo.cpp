@@ -286,9 +286,12 @@ void UnixProcessInfo::readUserName()
         getpwBufferSize = 16384;
     }
 
-    getpwBuffer = new char[static_cast<unsigned>(getpwBufferSize)];
+    getpwBuffer =
+        new (std::nothrow) char[static_cast<unsigned>(getpwBufferSize)];
     if (getpwBuffer == nullptr) {
-        return;
+      qCritical() << "ProcessInfo: Failed to allocate password buffer (size:"
+                  << getpwBufferSize << "bytes)";
+      return;
     }
     getpwStatus = getpwuid_r(static_cast<__uid_t>(uid), &passwdStruct, getpwBuffer, static_cast<size_t>(getpwBufferSize), &getpwResult);
     if ((getpwStatus == 0) && (getpwResult != nullptr)) {
@@ -353,7 +356,7 @@ bool LinuxProcessInfo::readProcInfo(int pid)
             }
         } while (!statusLine.isNull() && uidLine.isNull());
 
-        uidStrings << uidLine.split(QLatin1Char('\t'), QString::SkipEmptyParts);
+        uidStrings << uidLine.split(QLatin1Char('\t')); 
         // Must be 5 entries: 'Uid: %d %d %d %d' and
         // uid string must be less than 5 chars (uint)
         if (uidStrings.size() == 5) {

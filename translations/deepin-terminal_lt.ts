@@ -1,1300 +1,1099 @@
-<?xml version="1.0" ?><!DOCTYPE TS><TS version="2.1" language="lt">
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
+<TS version="2.1">
 <context>
     <name>CustomCommandOptDlg</name>
     <message>
-        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="97"/>
-        <source>Name:</source>
-        <translation>Pavadinimas:</translation>
-    </message>
-    <message>
-        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="99"/>
-        <source>Command:</source>
-        <translation>Komanda:</translation>
-    </message>
-    <message>
-        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="101"/>
-        <source>Shortcuts:</source>
-        <translation>Trumpiniai:</translation>
-    </message>
-    <message>
         <location filename="../src/customcommand/customcommandoptdlg.cpp" line="112"/>
-        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="113"/>
-        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="213"/>
-        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="219"/>
+        <source>Name:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="114"/>
+        <source>Command:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="116"/>
+        <source>Shortcuts:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="127"/>
         <source>Required</source>
-        <translation>Būtina</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="138"/>
+        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="154"/>
         <source>Add Command</source>
-        <translation>Pridėti komandą</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="147"/>
+        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="160"/>
         <source>Edit Command</source>
-        <translation>Taisyti komandą</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="157"/>
+        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="170"/>
         <source>Delete Command</source>
-        <translation>Ištrinti komandą</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="178"/>
+        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="191"/>
         <source>Cancel</source>
         <comment>button</comment>
-        <translation>Atsisakyti</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="180"/>
+        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="193"/>
         <source>Add</source>
         <comment>button</comment>
-        <translation>Pridėti</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="182"/>
+        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="195"/>
         <source>Save</source>
         <comment>button</comment>
-        <translation>Įrašyti</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="624"/>
+        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="372"/>
+        <source>Please enter a name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="386"/>
+        <source>Please enter a command</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="436"/>
+        <source>The name already exists,</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="437"/>
+        <source>please input another one.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="618"/>
         <source>OK</source>
         <comment>button</comment>
-        <translation>Gerai</translation>
-    </message>
-    <message>
-        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="380"/>
-        <source>Please enter a name</source>
-        <translation>Įveskite pavadinimą</translation>
-    </message>
-    <message>
-        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="394"/>
-        <source>Please enter a command</source>
-        <translation>Įveskite komandą</translation>
-    </message>
-    <message>
-        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="444"/>
-        <source>The name already exists,</source>
-        <translation>Pavadinimas jau egzistuoja,</translation>
-    </message>
-    <message>
-        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="445"/>
-        <source>please input another one.</source>
-        <translation>įveskite kitą.</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>CustomCommandPanel</name>
     <message>
-        <location filename="../src/customcommand/customcommandpanel.cpp" line="196"/>
+        <location filename="../src/customcommand/customcommandpanel.cpp" line="212"/>
         <source>Add Command</source>
-        <translation>Pridėti komandą</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/customcommand/customcommandpanel.cpp" line="200"/>
+        <location filename="../src/customcommand/customcommandpanel.cpp" line="216"/>
         <source>No commands yet</source>
-        <translation>Nėra įtrauktų komandų</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>CustomCommandPlugin</name>
     <message>
-        <location filename="../src/customcommand/customcommandplugin.cpp" line="35"/>
+        <location filename="../src/customcommand/customcommandplugin.cpp" line="50"/>
         <source>Custom commands</source>
-        <translation>Tinkintos komandos</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>CustomCommandSearchRstPanel</name>
     <message>
-        <location filename="../src/customcommand/customcommandsearchrstpanel.cpp" line="132"/>
+        <location filename="../src/customcommand/customcommandsearchrstpanel.cpp" line="146"/>
         <source>Search</source>
-        <translation>Ieškoti</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>CustomThemeSettingDialog</name>
     <message>
-        <location filename="../src/views/customthemesettingdialog.cpp" line="238"/>
+        <location filename="../src/views/customthemesettingdialog.cpp" line="236"/>
         <source>Custom Theme</source>
-        <translation>Naudotojo apsibrėžtis</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/customthemesettingdialog.cpp" line="262"/>
+        <location filename="../src/views/customthemesettingdialog.cpp" line="260"/>
         <source>Style:</source>
-        <translation>Stylis:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/customthemesettingdialog.cpp" line="266"/>
+        <location filename="../src/views/customthemesettingdialog.cpp" line="264"/>
         <source>Light</source>
-        <translation>Silpnas</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/customthemesettingdialog.cpp" line="271"/>
+        <location filename="../src/views/customthemesettingdialog.cpp" line="269"/>
         <source>Dark</source>
-        <translation>Tamsi</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/customthemesettingdialog.cpp" line="325"/>
+        <location filename="../src/views/customthemesettingdialog.cpp" line="323"/>
         <source>Fore color:</source>
-        <translation>Vidurinė spalva:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/customthemesettingdialog.cpp" line="332"/>
+        <location filename="../src/views/customthemesettingdialog.cpp" line="330"/>
         <source>Back color:</source>
-        <translation>Tiesinė spalva:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/customthemesettingdialog.cpp" line="350"/>
+        <location filename="../src/views/customthemesettingdialog.cpp" line="348"/>
         <source>Prompt PS1:</source>
-        <translation>Prompt PS1:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/customthemesettingdialog.cpp" line="354"/>
+        <location filename="../src/views/customthemesettingdialog.cpp" line="352"/>
         <source>Prompt PS2:</source>
-        <translation>Prompt PS2:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/customthemesettingdialog.cpp" line="424"/>
+        <location filename="../src/views/customthemesettingdialog.cpp" line="423"/>
         <source>Cancel</source>
         <comment>button</comment>
-        <translation>Atsisakyti</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/views/customthemesettingdialog.cpp" line="431"/>
         <source>Confirm</source>
         <comment>button</comment>
-        <translation>Patvirtinti</translation>
-    </message>
-</context>
-<context>
-    <name>GroupConfigOptDlg</name>
-    <message>
-        <location filename="../src/remotemanage/groupconfigoptdlg.cpp" line="39"/>
-        <source>Group Name(Required)</source>
-        <translation>Grupės pavadinimas (reikšmingas)</translation>
-    </message>
-    <message>
-        <location filename="../src/remotemanage/groupconfigoptdlg.cpp" line="41"/>
-        <source>Add Group</source>
-        <translation>Pridėti grupę</translation>
-    </message>
-    <message>
-        <location filename="../src/remotemanage/groupconfigoptdlg.cpp" line="44"/>
-        <source>Edit Group</source>
-        <translation>Taisyti grupę</translation>
-    </message>
-    <message>
-        <location filename="../src/remotemanage/groupconfigoptdlg.cpp" line="60"/>
-        <source>Cancel</source>
-        <translation>Atsisakyti</translation>
-    </message>
-    <message>
-        <location filename="../src/remotemanage/groupconfigoptdlg.cpp" line="61"/>
-        <source>Add</source>
-        <translation>Pridėti</translation>
-    </message>
-    <message>
-        <location filename="../src/remotemanage/groupconfigoptdlg.cpp" line="61"/>
-        <source>Save</source>
-        <translation>Įrašyti</translation>
-    </message>
-    <message>
-        <location filename="../src/remotemanage/groupconfigoptdlg.cpp" line="65"/>
-        <source>Please enter a group name</source>
-        <translation>Įveskite grupės pavadinimą</translation>
-    </message>
-    <message>
-        <location filename="../src/remotemanage/groupconfigoptdlg.cpp" line="69"/>
-        <source>The name should be no more than 30 characters</source>
-        <translation>Pavadinimas neturi būti ilgesnis nei 30 simboliai</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>ListView</name>
     <message>
-        <location filename="../src/views/listview.cpp" line="868"/>
+        <location filename="../src/views/listview.cpp" line="298"/>
         <source>Delete Server</source>
-        <translation>Ištrinti serverį</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/listview.cpp" line="870"/>
-        <source>Delete Custom Command</source>
-        <translation>Ištrinti surinktą komandą</translation>
-    </message>
-    <message>
-        <location filename="../src/views/listview.cpp" line="873"/>
-        <source>Cancel Server Group</source>
-        <translation>Atšaukti serverio grupę</translation>
-    </message>
-    <message>
-        <location filename="../src/views/listview.cpp" line="882"/>
-        <source>Ungrouped servers will go back to server list!</source>
-        <translation>Nerinkomūs serveriai grąžinsis prie serverių sąrašo!</translation>
-    </message>
-    <message>
-        <location filename="../src/views/listview.cpp" line="498"/>
-        <location filename="../src/views/listview.cpp" line="880"/>
+        <location filename="../src/views/listview.cpp" line="298"/>
         <source>Are you sure you want to delete %1?</source>
-        <translation>Ar tikrai norite ištrinti %1?</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="224"/>
-        <location filename="../src/main/mainwindow.cpp" line="276"/>
+        <location filename="../src/main/mainwindow.cpp" line="269"/>
         <source>New window</source>
-        <translation>Naujas langas</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="291"/>
+        <location filename="../src/main/mainwindow.cpp" line="339"/>
         <source>Settings</source>
-        <translation>Nustatymai</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="702"/>
+        <location filename="../src/main/mainwindow.cpp" line="755"/>
         <source>Cancel</source>
         <comment>button</comment>
-        <translation>Atsisakyti</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="704"/>
+        <location filename="../src/main/mainwindow.cpp" line="757"/>
         <source>Close</source>
         <comment>button</comment>
-        <translation>Užverti</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1752"/>
+        <location filename="../src/main/mainwindow.cpp" line="1829"/>
         <source>Type path to download file</source>
-        <translation>Įveskite kelią atsiunčiamam failui</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="2049"/>
+        <location filename="../src/main/mainwindow.cpp" line="2135"/>
         <source>Custom Theme</source>
-        <translation>Naudotojo apsibrėžtis</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/settings/settings_translation.cpp" line="17"/>
-        <source>Copy on select</source>
-        <translation>Kopijuoti, žymint tekstą</translation>
+        <location filename="../src/views/listview.cpp" line="304"/>
+        <source>Cancel</source>
+        <comment>button</comment>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/settings/settings_translation.cpp" line="19"/>
-        <source>Cursor blink</source>
-        <translation>Žymeklio mirksėjimas</translation>
+        <location filename="../src/views/listview.cpp" line="305"/>
+        <source>Delete</source>
+        <comment>button</comment>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/settings/settings_translation.cpp" line="21"/>
-        <source>Cursor style</source>
-        <translation>Kurso stilius</translation>
+        <location filename="../src/views/listview.cpp" line="494"/>
+        <source>Confirm</source>
+        <comment>button</comment>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/settings/settings_translation.cpp" line="23"/>
-        <source>Scroll on keystroke</source>
-        <translation>Slinkti paspaudus klavišą</translation>
+        <location filename="../src/views/termwidget.cpp" line="514"/>
+        <source>Close workspace</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/settings/settings_translation.cpp" line="25"/>
-        <source>Scroll on output</source>
-        <translation>Slinkti parodžius išvestį</translation>
+        <location filename="../src/views/termwidget.cpp" line="517"/>
+        <source>Close other workspaces</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/settings/settings_translation.cpp" line="27"/>
-        <source>Allow Ctrl+scrollwheel to zoom text size</source>
-        <translation>Leisti Ctrl+vertikali skrolinėje klavišai didinti ar mažinti tekstą</translation>
+        <location filename="../src/views/termwidget.cpp" line="1177"/>
+        <source>Could not find "%1", starting "%2" instead. Please check your shell profile.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/settings/settings_translation.cpp" line="29"/>
-        <source>Hide Quake window after losing focus</source>
-        <translation>Slėpti Quake langą, jam praradus fokusavimą</translation>
+        <location filename="../src/views/termwidget.cpp" line="1183"/>
+        <source>Could not open "%1", unable to run it</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/settings/settings_translation.cpp" line="31"/>
-        <source>Quake window animation speed</source>
-        <translation>Skambinčiojo lango animacijos greitis</translation>
+        <location filename="../src/views/termwidget.cpp" line="1185"/>
+        <source>Could not find "%1", unable to run it</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/service.cpp" line="145"/>
+        <location filename="../src/views/termwidget.cpp" line="1215"/>
+        <source>Output has been suspended by pressing Ctrl+S. Pressing Ctrl+Q to resume.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/views/tabrenamewidget.cpp" line="132"/>
+        <source>Tab title format</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/views/tabrenamewidget.cpp" line="134"/>
+        <source>Remote tab title format</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/views/tabrenamedlg.cpp" line="203"/>
+        <source>Rename title</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/views/tabbar.cpp" line="498"/>
+        <source>Close tab</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/views/tabbar.cpp" line="501"/>
+        <source>Close other tabs</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../src/settings/settings_translation.cpp" line="33"/>
-        <source>Blur background</source>
-        <translation>Sulieti foną</translation>
-    </message>
-    <message>
-        <location filename="../src/main/service.cpp" line="214"/>
-        <source>debuginfod URLs</source>
-        <translation>debuginfod URL-ai</translation>
+        <source>Copy on select</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/settings/settings_translation.cpp" line="35"/>
-        <source>Use on starting</source>
-        <translation>Naudojama atidėjant</translation>
+        <source>Cursor blink</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/settings/settings_translation.cpp" line="37"/>
-        <source>Font</source>
-        <translation>Šriftas</translation>
+        <source>Cursor style</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/settings/settings_translation.cpp" line="39"/>
-        <source>Font size</source>
-        <translation>Skraidinės dydis</translation>
+        <source>Scroll on keystroke</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/service.cpp" line="176"/>
         <location filename="../src/settings/settings_translation.cpp" line="41"/>
-        <source>Opacity</source>
-        <translation>Klaritetas</translation>
+        <source>Scroll on output</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/settings/settings_translation.cpp" line="43"/>
-        <source>Advanced</source>
-        <translation>Išplėstinės</translation>
+        <source>Hide Quake window after losing focus</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/settings/settings_translation.cpp" line="45"/>
-        <source>Cursor</source>
-        <translation>Žymeklis</translation>
+        <source>Blur background</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/settings/settings_translation.cpp" line="47"/>
-        <source>Scroll</source>
-        <translation>Slinkimas</translation>
+        <source>Use on starting</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/settings/settings_translation.cpp" line="49"/>
-        <source>Window</source>
-        <translation>Langas</translation>
+        <source>Font</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/settings/settings_translation.cpp" line="51"/>
-        <source>Basic</source>
-        <translation>Pagrindiniai</translation>
+        <source>Font size</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/settings/settings_translation.cpp" line="53"/>
-        <source>Interface</source>
-        <translation>Sąsaja</translation>
+        <source>Opacity</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/settings/settings_translation.cpp" line="55"/>
-        <source>Shortcuts</source>
-        <translation>Trumpiniai</translation>
+        <source>Advanced</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1594"/>
         <location filename="../src/settings/settings_translation.cpp" line="57"/>
-        <source>Others</source>
-        <translation>Kita</translation>
+        <source>Cursor</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1592"/>
-        <location filename="../src/main/mainwindow.cpp" line="2183"/>
-        <location filename="../src/main/terminalapplication.cpp" line="25"/>
         <location filename="../src/settings/settings_translation.cpp" line="59"/>
-        <source>Terminal</source>
-        <translation>Terminalas</translation>
+        <source>Scroll</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/settings/settings_translation.cpp" line="61"/>
-        <source>Workspace</source>
-        <translation>Darbo sritis</translation>
+        <source>Window</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1658"/>
         <location filename="../src/settings/settings_translation.cpp" line="63"/>
-        <source>Custom commands</source>
-        <translation>Tinkintos komandos</translation>
+        <source>Basic</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1658"/>
         <location filename="../src/settings/settings_translation.cpp" line="65"/>
-        <source>Display shortcuts</source>
-        <translation>Rodyti sparčiuosius klavišus</translation>
+        <source>Interface</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1658"/>
         <location filename="../src/settings/settings_translation.cpp" line="67"/>
-        <source>Remote management</source>
-        <translation>Nuotolinis administravimas</translation>
+        <source>Shortcuts</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1638"/>
-        <location filename="../src/settings/settings_translation.cpp" line="101"/>
-        <source>New tab</source>
-        <translation>Nauja kortelė</translation>
-    </message>
-    <message>
-        <location filename="../src/main/mainwindow.cpp" line="1638"/>
-        <location filename="../src/settings/settings_translation.cpp" line="103"/>
-        <source>Next tab</source>
-        <translation>Kitas langas</translation>
-    </message>
-    <message>
-        <location filename="../src/main/mainwindow.cpp" line="1638"/>
-        <location filename="../src/settings/settings_translation.cpp" line="105"/>
-        <source>Previous tab</source>
-        <translation>Ankstesnis langas</translation>
-    </message>
-    <message>
-        <location filename="../src/main/mainwindow.cpp" line="1640"/>
-        <location filename="../src/settings/settings_translation.cpp" line="107"/>
-        <source>Select left workspace</source>
-        <translation>Pasirinkite kairiojo darbinio uždarietojo</translation>
-    </message>
-    <message>
-        <location filename="../src/main/mainwindow.cpp" line="1639"/>
-        <location filename="../src/settings/settings_translation.cpp" line="109"/>
-        <source>Select lower workspace</source>
-        <translation>Pasirinkite apačiojo darbinio uždarietojo</translation>
-    </message>
-    <message>
-        <location filename="../src/main/mainwindow.cpp" line="1640"/>
-        <location filename="../src/settings/settings_translation.cpp" line="111"/>
-        <source>Select right workspace</source>
-        <translation>Pasirinkite dešiniojo darbinio uždarietojo</translation>
-    </message>
-    <message>
-        <location filename="../src/main/mainwindow.cpp" line="1639"/>
-        <location filename="../src/settings/settings_translation.cpp" line="113"/>
-        <source>Select upper workspace</source>
-        <translation>Pasirinkite aukščiojo darbinio uždarietojo</translation>
-    </message>
-    <message>
-        <location filename="../src/settings/settings_translation.cpp" line="119"/>
-        <source>Tab titles</source>
-        <translation>Langų pavadinimai</translation>
-    </message>
-    <message>
-        <location filename="../src/main/mainwindow.cpp" line="1641"/>
-        <location filename="../src/settings/settings_translation.cpp" line="125"/>
-        <source>Go to tab 1</source>
-        <translation>Pereskini į langą 1</translation>
-    </message>
-    <message>
-        <location filename="../src/main/mainwindow.cpp" line="1641"/>
-        <location filename="../src/settings/settings_translation.cpp" line="127"/>
-        <source>Go to tab 2</source>
-        <translation>Pereskini į langą 2</translation>
-    </message>
-    <message>
-        <location filename="../src/main/mainwindow.cpp" line="1641"/>
-        <location filename="../src/settings/settings_translation.cpp" line="129"/>
-        <source>Go to tab 3</source>
-        <translation>Pereskini į langą 3</translation>
-    </message>
-    <message>
-        <location filename="../src/main/mainwindow.cpp" line="1642"/>
-        <location filename="../src/settings/settings_translation.cpp" line="131"/>
-        <source>Go to tab 4</source>
-        <translation>Pereskini į langą 4</translation>
-    </message>
-    <message>
-        <location filename="../src/main/mainwindow.cpp" line="1642"/>
-        <location filename="../src/settings/settings_translation.cpp" line="133"/>
-        <source>Go to tab 5</source>
-        <translation>Pereskini į langą 5</translation>
-    </message>
-    <message>
-        <location filename="../src/main/mainwindow.cpp" line="1642"/>
-        <location filename="../src/settings/settings_translation.cpp" line="135"/>
-        <source>Go to tab 6</source>
-        <translation>Pereskini į langą 6</translation>
-    </message>
-    <message>
-        <location filename="../src/main/mainwindow.cpp" line="1643"/>
-        <location filename="../src/settings/settings_translation.cpp" line="137"/>
-        <source>Go to tab 7</source>
-        <translation>Pereskini į langą 7</translation>
-    </message>
-    <message>
-        <location filename="../src/main/mainwindow.cpp" line="1643"/>
-        <location filename="../src/settings/settings_translation.cpp" line="139"/>
-        <source>Go to tab 8</source>
-        <translation>Pereskini į langą 8</translation>
-    </message>
-    <message>
-        <location filename="../src/main/mainwindow.cpp" line="1643"/>
-        <location filename="../src/settings/settings_translation.cpp" line="141"/>
-        <source>Go to tab 9</source>
-        <translation>Pereskini į langą 9</translation>
-    </message>
-    <message>
-        <location filename="../src/settings/settings_translation.cpp" line="143"/>
-        <source>Disable flow control using Ctrl+S, Ctrl+Q</source>
-        <translation>Išjunkite straipsnio valdymą naudojant Ctrl+S, Ctrl+Q</translation>
-    </message>
-    <message>
-        <location filename="../src/settings/settings_translation.cpp" line="145"/>
-        <source>Shell profile</source>
-        <translation>Konsolio profilis</translation>
-    </message>
-    <message>
-        <location filename="../src/settings/settings_translation.cpp" line="147"/>
-        <source>History size</source>
-        <translation>Istoricijos dydis</translation>
-    </message>
-    <message>
-        <location filename="../src/settings/settings_translation.cpp" line="149"/>
-        <source>Include special character(s) in double click selections</source>
-        <translation>Itraukite specialų ženklą(us) į įvykdytų paspaudimą pasirinkimą</translation>
-    </message>
-    <message>
-        <location filename="../src/settings/settings_translation.cpp" line="151"/>
-        <source>Allow Ctrl + left mouse click to set cursor position</source>
-        <translation>Leiskite Ctrl + kairiojo mygtuko spustelėjimą nustatyti kursorio poziciją</translation>
-    </message>
-    <message>
-        <location filename="../src/settings/settings_translation.cpp" line="153"/>
-        <source>The HTTP file server used for transmitting debugging information resources</source>
-        <translation>HTTP failų serveris naudojamas išsiųsti deriniojimo informacijos resursus</translation>
-    </message>
-    <message>
-        <location filename="../src/main/mainwindow.cpp" line="1658"/>
         <location filename="../src/settings/settings_translation.cpp" line="69"/>
-        <location filename="../src/views/tabbar.cpp" line="486"/>
-        <location filename="../src/views/tabrenamedlg.cpp" line="208"/>
-        <source>Rename title</source>
-        <translation>Pervadinti pavadinimą</translation>
+        <source>Others</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1658"/>
         <location filename="../src/settings/settings_translation.cpp" line="71"/>
-        <source>Fullscreen</source>
-        <translation>Visas ekranas</translation>
+        <source>Terminal</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1623"/>
         <location filename="../src/settings/settings_translation.cpp" line="73"/>
-        <source>Copy</source>
-        <translation>Kopijuoti</translation>
+        <source>Workspace</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1623"/>
         <location filename="../src/settings/settings_translation.cpp" line="75"/>
-        <source>Default size</source>
-        <translation>Numatytasis dydis</translation>
+        <source>Custom commands</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1623"/>
         <location filename="../src/settings/settings_translation.cpp" line="77"/>
-        <source>Paste</source>
-        <translation>Įdėti</translation>
+        <source>Display shortcuts</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/settings/settings_translation.cpp" line="79"/>
-        <source>Search</source>
-        <translation>Ieškoti</translation>
-    </message>
-    <message>
-        <location filename="../src/main/mainwindow.cpp" line="1623"/>
-        <location filename="../src/settings/settings_translation.cpp" line="81"/>
-        <source>Select all</source>
-        <translation>Žymėti viską</translation>
+        <source>Remote management</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/settings/settings_translation.cpp" line="83"/>
-        <source>Jump to next command</source>
-        <translation>Pereiti prie kitos komandos</translation>
+        <source>Fullscreen</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/settings/settings_translation.cpp" line="85"/>
-        <source>Jump to previous command</source>
-        <translation>Pereiti prie ankstesnės komandos</translation>
+        <source>Copy</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1623"/>
         <location filename="../src/settings/settings_translation.cpp" line="87"/>
-        <source>Zoom in</source>
-        <translation>Didinti</translation>
+        <source>Default size</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1623"/>
         <location filename="../src/settings/settings_translation.cpp" line="89"/>
-        <source>Zoom out</source>
-        <translation>Mažinti</translation>
+        <source>Paste</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/settings/settings_translation.cpp" line="91"/>
-        <source>Close other windows</source>
-        <translation>Užverti kitus langus</translation>
+        <source>Search</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1640"/>
         <location filename="../src/settings/settings_translation.cpp" line="93"/>
-        <location filename="../src/views/termwidget.cpp" line="499"/>
-        <source>Close other workspaces</source>
-        <translation>Uždarykite kitus darbinius uždarietis</translation>
-    </message>
-    <message>
-        <location filename="../src/views/termwidget.cpp" line="1247"/>
-        <source>Could not find &quot;%1&quot;, starting &quot;%2&quot; instead. Please check your shell profile.</source>
-        <translation>Nebuvo rastas &quot;%1&quot;, pradedama naudoti &quot;%2&quot;. Patikrinkite savo konsolio profilį.</translation>
-    </message>
-    <message>
-        <location filename="../src/views/termwidget.cpp" line="1253"/>
-        <source>Could not open &quot;%1&quot;, unable to run it</source>
-        <translation>Nebūtino atidaryti &quot;%1&quot;, negaliu jį vykdyti</translation>
-    </message>
-    <message>
-        <location filename="../src/views/termwidget.cpp" line="1255"/>
-        <source>Could not find &quot;%1&quot;, unable to run it</source>
-        <translation>Nebuvo rastas &quot;%1&quot;, negaliu jį vykdyti</translation>
-    </message>
-    <message>
-        <location filename="../src/views/termwidget.cpp" line="1298"/>
-        <source>Output has been suspended by pressing Ctrl+S. Pressing Ctrl+Q to resume.</source>
-        <translation type="unfinished"/>
+        <source>Select all</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/settings/settings_translation.cpp" line="95"/>
-        <source>Close window</source>
-        <translation>Užverti langą</translation>
+        <source>Jump to next command</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1640"/>
         <location filename="../src/settings/settings_translation.cpp" line="97"/>
-        <location filename="../src/views/termwidget.cpp" line="496"/>
-        <source>Close workspace</source>
-        <translation>Užverti darbo sritį</translation>
+        <source>Jump to previous command</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1639"/>
         <location filename="../src/settings/settings_translation.cpp" line="99"/>
+        <source>Zoom in</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="101"/>
+        <source>Zoom out</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="103"/>
+        <source>Close other windows</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="107"/>
+        <source>Close window</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="111"/>
         <source>Horizontal split</source>
-        <translation>Horizontalus dalijimas</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1639"/>
+        <location filename="../src/settings/settings_translation.cpp" line="113"/>
+        <source>New tab</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../src/settings/settings_translation.cpp" line="115"/>
-        <source>Vertical split</source>
-        <translation>Vertikalus dalijimas</translation>
+        <source>Next tab</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1623"/>
         <location filename="../src/settings/settings_translation.cpp" line="117"/>
+        <source>Previous tab</source>
+        <translation>Ankstesnisis skiltis</translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="119"/>
+        <source>Select left workspace</source>
+        <translation>Pasirinkite kairę darbalaukį</translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="121"/>
+        <source>Select lower workspace</source>
+        <translation>Pasirinkite žemesnį darbalaukį</translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="123"/>
+        <source>Select right workspace</source>
+        <translation>Pasirinkite dešinę darbalaukį</translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="125"/>
+        <source>Select upper workspace</source>
+        <translation>Pasirinkite aukštesnį darbalaukį</translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="127"/>
+        <source>Vertical split</source>
+        <translation>Vertikali dalis</translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="129"/>
         <source>Find</source>
         <translation>Rasti</translation>
     </message>
     <message>
-        <location filename="../src/common/utils.cpp" line="263"/>
-        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="627"/>
-        <location filename="../src/main/service.cpp" line="416"/>
-        <source>please set another one.</source>
-        <translation type="unfinished"/>
+        <location filename="../src/settings/settings_translation.cpp" line="131"/>
+        <source>Tab titles</source>
+        <translation>Skilties pavadinimai</translation>
     </message>
     <message>
-        <location filename="../src/main/terminalapplication.cpp" line="28"/>
+        <location filename="../src/settings/settings_translation.cpp" line="137"/>
+        <source>Go to tab 1</source>
+        <translation>Eiti į skiltį 1</translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="139"/>
+        <source>Go to tab 2</source>
+        <translation>Eiti į skiltį 2</translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="141"/>
+        <source>Go to tab 3</source>
+        <translation>Eiti į skiltį 3</translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="143"/>
+        <source>Go to tab 4</source>
+        <translation>Eiti į skiltį 4</translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="145"/>
+        <source>Go to tab 5</source>
+        <translation>Eiti į skiltį 5</translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="147"/>
+        <source>Go to tab 6</source>
+        <translation>Eiti į skiltį 6</translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="149"/>
+        <source>Go to tab 7</source>
+        <translation>Eiti į skiltį 7</translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="151"/>
+        <source>Go to tab 8</source>
+        <translation>Eiti į skiltį 8</translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="153"/>
+        <source>Go to tab 9</source>
+        <translation>Eiti į skiltį 9</translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="155"/>
+        <source>Disable flow control using Ctrl+S, Ctrl+Q</source>
+        <translation>Išjungti srautą naudodami Ctrl+S, Ctrl+Q</translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings_translation.cpp" line="157"/>
+        <source>Shell profile</source>
+        <translation>Šelio profilių</translation>
+    </message>
+    <message>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="517"/>
+        <source>The name should be no more than 32 characters</source>
+        <translation>Pavadinimas turi būti ne daugiau nei 32 simbolių</translation>
+    </message>
+    <message>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="583"/>
+        <source>Select the private key file</source>
+        <translation>Pasirinkite privataus rakto failą</translation>
+    </message>
+    <message>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="587"/>
+        <source>Select</source>
+        <translation>Pasirinkite</translation>
+    </message>
+    <message>
+        <location filename="../src/main/terminalapplication.cpp" line="39"/>
         <source>Terminal is an advanced terminal emulator with workspace, multiple windows, remote management, quake mode and other features.</source>
-        <translation>Terminalas yra išplėstinis terminalo emuliatorius su darbo sričių, kelių langų, nuotolinio administravimo, quake veiksenos ir kitomis ypatybėmis.</translation>
+        <translation>>-
+ Terminal yra išplėstinis terminalo emuliatorius su darbalaukiu, keliomis
+ lango, atstumtu valdymu, quake režimu ir kitomis funkcijomis.</translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1590"/>
+        <location filename="../src/main/mainwindow.cpp" line="1667"/>
         <source>Tabs</source>
-        <translation type="unfinished"/>
+        <translation>Skiltys</translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1638"/>
-        <location filename="../src/views/tabbar.cpp" line="480"/>
-        <source>Close tab</source>
-        <translation type="unfinished"/>
+        <location filename="../src/main/mainwindow.cpp" line="1687"/>
+        <source>Switch focus to "+" icon</source>
+        <translation>Perjungti dėmesį į '+' simbolių</translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1639"/>
+        <location filename="../src/main/mainwindow.cpp" line="1716"/>
         <source>Select tab</source>
-        <translation type="unfinished"/>
+        <translation>Pasirinkite skiltį</translation>
     </message>
     <message>
-        <location filename="../src/main/mainwindow.cpp" line="1610"/>
-        <source>Switch focus to &quot;+&quot; icon</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location filename="../src/common/utils.cpp" line="157"/>
-        <location filename="../src/main/mainwindow.cpp" line="1698"/>
+        <location filename="../src/main/mainwindow.cpp" line="1775"/>
         <source>Select file to upload</source>
-        <translation>Pasirinkti failą įkėlimui</translation>
+        <translation>Pasirinkite failą, kurį norite pakelti</translation>
     </message>
     <message>
-        <location filename="../src/common/utils.cpp" line="162"/>
-        <location filename="../src/main/mainwindow.cpp" line="1705"/>
+        <location filename="../src/main/mainwindow.cpp" line="1782"/>
         <source>Upload</source>
-        <translation>Įkelti</translation>
+        <translation>Pakelti</translation>
     </message>
     <message>
-        <location filename="../src/common/utils.cpp" line="230"/>
-        <source>Programs are still running in terminal</source>
-        <translation>Terminale yra vis dar veikiančių programų</translation>
+        <location filename="../src/main/mainwindow.cpp" line="1845"/>
+        <source>Select a directory to save the file</source>
+        <translation>Pasirinkite aplanką, kurioje išsaugoti failą</translation>
     </message>
     <message>
-        <location filename="../src/common/utils.cpp" line="182"/>
-        <location filename="../src/common/utils.cpp" line="216"/>
+        <location filename="../src/main/service.cpp" line="403"/>
+        <source>please set another one.</source>
+        <translation>lūdė, nustatykite kitą.</translation>
+    </message>
+    <message>
+        <location filename="../src/common/utils.cpp" line="173"/>
         <source>Close this terminal?</source>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/common/utils.cpp" line="174"/>
+        <source>There is still a process running in this terminal. Closing the terminal will kill it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/common/utils.cpp" line="178"/>
+        <source>There are still %1 processes running in this terminal. Closing the terminal will kill all of them.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/common/utils.cpp" line="183"/>
-        <location filename="../src/common/utils.cpp" line="217"/>
-        <source>There is still a process running in this terminal. Closing the terminal will terminate it.</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location filename="../src/common/utils.cpp" line="187"/>
-        <location filename="../src/common/utils.cpp" line="221"/>
-        <source>There are still %1 processes running in this terminal. Closing the terminal will terminate all of them.</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location filename="../src/common/utils.cpp" line="192"/>
-        <location filename="../src/common/utils.cpp" line="212"/>
         <source>Close this window?</source>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/common/utils.cpp" line="193"/>
-        <location filename="../src/common/utils.cpp" line="213"/>
-        <source>There are still processes running in this window. Closing the window will terminate all of them.</source>
-        <translation type="unfinished"/>
+        <location filename="../src/common/utils.cpp" line="184"/>
+        <source>There are still processes running in this window. Closing the window will kill all of them.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/common/utils.cpp" line="136"/>
-        <location filename="../src/main/mainwindow.cpp" line="1768"/>
-        <source>Select a directory to save the file</source>
-        <translation type="unfinished"/>
+        <location filename="../src/common/utils.cpp" line="221"/>
+        <source>Programs are still running in terminal</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/common/utils.cpp" line="230"/>
+        <location filename="../src/common/utils.cpp" line="221"/>
         <source>Are you sure you want to uninstall it?</source>
-        <translation>Ar tikrai norite ją pašalinti?</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/common/utils.cpp" line="243"/>
-        <location filename="../src/common/utils.cpp" line="247"/>
+        <location filename="../src/common/utils.cpp" line="234"/>
         <source>Are you sure you want to uninstall this application?</source>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/common/utils.cpp" line="244"/>
-        <location filename="../src/common/utils.cpp" line="248"/>
+        <location filename="../src/common/utils.cpp" line="235"/>
         <source>You will not be able to use Terminal any longer.</source>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/common/utils.cpp" line="253"/>
-        <location filename="../src/views/listview.cpp" line="499"/>
-        <location filename="../src/views/listview.cpp" line="893"/>
-        <location filename="../src/views/tabrenamedlg.cpp" line="241"/>
-        <source>Cancel</source>
-        <comment>button</comment>
-        <translation>Atsisakyti</translation>
-    </message>
-    <message>
-        <location filename="../src/common/utils.cpp" line="254"/>
-        <location filename="../src/common/utils.cpp" line="298"/>
+        <location filename="../src/common/utils.cpp" line="245"/>
         <source>OK</source>
         <comment>button</comment>
-        <translation>Gerai</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/common/utils.cpp" line="338"/>
+        <location filename="../src/common/utils.cpp" line="323"/>
+        <source>Set the work directory</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/common/utils.cpp" line="326"/>
+        <source>Set the window mode on starting</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/common/utils.cpp" line="329"/>
         <source>Execute a command in the terminal</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location filename="../src/common/utils.cpp" line="341"/>
-        <source>Run script string in the terminal</source>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/common/utils.cpp" line="332"/>
-        <source>Set the work directory</source>
-        <translation type="unfinished"/>
+        <source>Run script string in the terminal</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/common/utils.cpp" line="335"/>
-        <source>Set the window mode on starting</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location filename="../src/common/utils.cpp" line="344"/>
         <source>Run in quake mode</source>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/common/utils.cpp" line="347"/>
+        <location filename="../src/common/utils.cpp" line="338"/>
         <source>Keep terminal open when command finishes</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location filename="../src/customcommand/customcommandoptdlg.cpp" line="387"/>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="476"/>
-        <source>The name should be no more than 32 characters</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location filename="../src/common/utils.cpp" line="142"/>
-        <location filename="../src/main/mainwindow.cpp" line="1774"/>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="546"/>
-        <source>Select</source>
-        <translation>Pasirinkti</translation>
-    </message>
-    <message>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="542"/>
-        <source>Select the private key file</source>
-        <translation>Pasirinkite privačiojo rakto failą</translation>
-    </message>
-    <message>
-        <location filename="../src/settings/settings_translation.cpp" line="121"/>
-        <location filename="../src/views/tabrenamewidget.cpp" line="111"/>
-        <source>Tab title format</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location filename="../src/settings/settings_translation.cpp" line="123"/>
-        <location filename="../src/views/tabrenamewidget.cpp" line="113"/>
-        <source>Remote tab title format</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location filename="../src/main/mainwindow.cpp" line="1638"/>
-        <location filename="../src/views/tabbar.cpp" line="483"/>
-        <source>Close other tabs</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location filename="../src/views/listview.cpp" line="894"/>
-        <source>Delete</source>
-        <comment>button</comment>
-        <translation>Ištrinti</translation>
-    </message>
-    <message>
-        <location filename="../src/views/listview.cpp" line="500"/>
-        <location filename="../src/views/tabrenamedlg.cpp" line="245"/>
-        <source>Confirm</source>
-        <comment>button</comment>
-        <translation>Patvirtinti</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>RemoteManagementPanel</name>
     <message>
-        <location filename="../src/remotemanage/remotemanagementpanel.cpp" line="210"/>
-        <source>Add Group</source>
-        <translation>Pridėti grupę</translation>
-    </message>
-    <message>
-        <location filename="../src/remotemanage/remotemanagementpanel.cpp" line="211"/>
+        <location filename="../src/remotemanage/remotemanagementpanel.cpp" line="201"/>
         <source>Add Server</source>
-        <translation>Pridėti serverį</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/remotemanage/remotemanagementpanel.cpp" line="215"/>
+        <location filename="../src/remotemanage/remotemanagementpanel.cpp" line="205"/>
         <source>No servers yet</source>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>RemoteManagementPlugin</name>
     <message>
-        <location filename="../src/remotemanage/remotemanagementplugn.cpp" line="75"/>
+        <location filename="../src/remotemanage/remotemanagementplugn.cpp" line="90"/>
         <source>Remote management</source>
-        <translation>Nuotolinis administravimas</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/remotemanage/remotemanagementplugn.cpp" line="201"/>
+        <location filename="../src/remotemanage/remotemanagementplugn.cpp" line="216"/>
         <source>Make sure that rz and sz commands have been installed in the server before right clicking to upload and download files.</source>
-        <translation>帕si, už duotas serveryje rz ir sz komandos, prieš kairę spustelėjimą norint įkelti ir atidaryti failus.</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>RemoteManagementSearchPanel</name>
     <message>
-        <location filename="../src/remotemanage/remotemanagementsearchpanel.cpp" line="211"/>
+        <location filename="../src/remotemanage/remotemanagementsearchpanel.cpp" line="225"/>
         <source>Search</source>
-        <translation>Ieškoti</translation>
-    </message>
-</context>
-<context>
-    <name>ServerConfigManager</name>
-    <message>
-        <location filename="../src/remotemanage/serverconfigmanager.cpp" line="87"/>
-        <source>Groups</source>
-        <translation>Grupės</translation>
-    </message>
-    <message>
-        <location filename="../src/remotemanage/serverconfigmanager.cpp" line="88"/>
-        <source>Servers</source>
-        <translation>Servery</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>ServerConfigOptDlg</name>
     <message>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="91"/>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="70"/>
+        <source>Advanced options</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="108"/>
         <source>Add Server</source>
-        <translation>Pridėti serverį</translation>
-    </message>
-    <message>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="127"/>
-        <source>Server name:</source>
-        <translation>Serverio pavadinimas:</translation>
-    </message>
-    <message>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="129"/>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="139"/>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="167"/>
-        <source>Required</source>
-        <translation>Būtina</translation>
-    </message>
-    <message>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="137"/>
-        <source>Address:</source>
-        <translation>Adresas:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="144"/>
+        <source>Server name:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="146"/>
+        <source>Required</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="154"/>
+        <source>Address:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="161"/>
         <source>Port:</source>
-        <translation>Prievadas:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="165"/>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="182"/>
         <source>Username:</source>
-        <translation>Naudotojo vardas:</translation>
-    </message>
-    <message>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="172"/>
-        <source>Password:</source>
-        <translation>Slaptažodis:</translation>
-    </message>
-    <message>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="178"/>
-        <source>Certificate:</source>
-        <translation>Liudijimas:</translation>
-    </message>
-    <message>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="185"/>
-        <source>Group:</source>
-        <translation>Grupė:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="189"/>
-        <source>No Group</source>
-        <translation>Nėra grupės</translation>
+        <source>Password:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="193"/>
-        <source>Path:</source>
-        <translation>Kelias:</translation>
-    </message>
-    <message>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="199"/>
-        <source>Command:</source>
-        <translation>Komanda:</translation>
-    </message>
-    <message>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="205"/>
-        <source>Encoding:</source>
-        <translation>Koduotė:</translation>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="195"/>
+        <source>Certificate:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="211"/>
-        <source>Backspace key:</source>
-        <translation>Naikinimo klavišas:</translation>
+        <source>Group:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="217"/>
-        <source>Delete key:</source>
-        <translation>Šalinimo klavišas:</translation>
+        <source>Path:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="223"/>
-        <source>Cancel</source>
-        <comment>button</comment>
-        <translation>Atsisakyti</translation>
-    </message>
-    <message>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="224"/>
-        <source>Add</source>
-        <comment>button</comment>
-        <translation>Pridėti</translation>
-    </message>
-    <message>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="228"/>
-        <source>Edit Server</source>
-        <translation>Redaguoti serverį</translation>
+        <source>Command:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="229"/>
+        <source>Encoding:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="235"/>
+        <source>Backspace key:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="241"/>
+        <source>Delete key:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="247"/>
+        <source>Delete server</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="261"/>
+        <source>Cancel</source>
+        <comment>button</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="262"/>
+        <source>Add</source>
+        <comment>button</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="266"/>
+        <source>Edit Server</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="267"/>
         <source>Save</source>
         <comment>button</comment>
-        <translation>Įrašyti</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="470"/>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="511"/>
         <source>Please enter a server name</source>
-        <translation>Įveskite serveryje pavadinimą</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="483"/>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="524"/>
         <source>Please enter an IP address</source>
-        <translation>Įveskite IP adresą</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="488"/>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="529"/>
         <source>Please enter a port</source>
-        <translation>Įveskite portą</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="494"/>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="535"/>
         <source>Please enter a username</source>
-        <translation>Įveskite vartotojo vardą</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="508"/>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="549"/>
         <source>The server name already exists,</source>
-        <translation>Serveryje pavadinimas jau egzistuoja, </translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="509"/>
+        <location filename="../src/remotemanage/serverconfigoptdlg.cpp" line="550"/>
         <source>please input another one. </source>
-        <translation>įveskite kitą. </translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>Service</name>
     <message>
-        <location filename="../src/main/service.cpp" line="412"/>
+        <location filename="../src/main/service.cpp" line="399"/>
         <source>OK</source>
         <comment>button</comment>
-        <translation>Gerai</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>Settings</name>
     <message>
-        <location filename="../src/settings/settings.cpp" line="130"/>
-        <source>Split screen</source>
-        <translation>Išskirti ekrano dalis</translation>
-    </message>
-    <message>
-        <location filename="../src/settings/settings.cpp" line="130"/>
-        <source>Fullscreen</source>
-        <translation>Visas ekranas</translation>
-    </message>
-    <message>
-        <location filename="../src/settings/settings.cpp" line="130"/>
+        <location filename="../src/settings/settings.cpp" line="143"/>
         <source>Normal window</source>
-        <translation>Normalus langas</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/settings/settings.cpp" line="130"/>
+        <location filename="../src/settings/settings.cpp" line="143"/>
+        <source>Split screen</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/settings/settings.cpp" line="143"/>
         <source>Maximum</source>
-        <translation> maksimumas</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/settings/settings.cpp" line="722"/>
-        <source>Fast</source>
-        <translation>Greitas</translation>
-    </message>
-    <message>
-        <location filename="../src/settings/settings.cpp" line="726"/>
-        <source>Slow</source>
-        <translation>Lėtas</translation>
+        <location filename="../src/settings/settings.cpp" line="143"/>
+        <source>Fullscreen</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>ShortcutManager</name>
     <message>
-        <location filename="../src/settings/shortcutmanager.cpp" line="268"/>
-        <location filename="../src/settings/shortcutmanager.cpp" line="277"/>
+        <location filename="../src/settings/shortcutmanager.cpp" line="283"/>
         <source>The shortcut %1 is invalid, </source>
-        <translation>Atrodo, kad štiestų priemonė %1 yra netinkama, </translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/settings/shortcutmanager.cpp" line="284"/>
-        <location filename="../src/settings/shortcutmanager.cpp" line="291"/>
-        <location filename="../src/settings/shortcutmanager.cpp" line="297"/>
+        <location filename="../src/settings/shortcutmanager.cpp" line="299"/>
         <source>The shortcut %1 was already in use, </source>
-        <translation>Štiestų priemonė %1 jau buvo naudojama, </translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>TabRenameWidget</name>
     <message>
-        <location filename="../src/views/tabrenamewidget.cpp" line="42"/>
+        <location filename="../src/views/tabrenamewidget.cpp" line="60"/>
         <source>Insert</source>
-        <translation>Įterpti</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/tabrenamewidget.cpp" line="74"/>
-        <location filename="../src/views/tabrenamewidget.cpp" line="88"/>
+        <location filename="../src/views/tabrenamewidget.cpp" line="95"/>
         <source>username: %u</source>
-        <translation>vartotojo vardas: %u</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/tabrenamewidget.cpp" line="74"/>
+        <location filename="../src/views/tabrenamewidget.cpp" line="95"/>
         <source>username@: %U</source>
-        <translation>vartotojo vardas@: %U</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/tabrenamewidget.cpp" line="74"/>
+        <location filename="../src/views/tabrenamewidget.cpp" line="95"/>
         <source>remote host: %h</source>
-        <translation>atsiejamas serveris: %h</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/tabrenamewidget.cpp" line="75"/>
-        <location filename="../src/views/tabrenamewidget.cpp" line="87"/>
+        <location filename="../src/views/tabrenamewidget.cpp" line="96"/>
         <source>session number: %#</source>
-        <translation>sesijos numeris: %#</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/tabrenamewidget.cpp" line="75"/>
-        <location filename="../src/views/tabrenamewidget.cpp" line="89"/>
+        <location filename="../src/views/tabrenamewidget.cpp" line="96"/>
         <source>title set by shell: %w</source>
-        <translation>shell nustatytas pavadinimas: %w</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/tabrenamewidget.cpp" line="86"/>
+        <location filename="../src/views/tabrenamewidget.cpp" line="107"/>
         <source>program name: %n</source>
-        <translation>programos pavadinimas: %n</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/tabrenamewidget.cpp" line="86"/>
+        <location filename="../src/views/tabrenamewidget.cpp" line="107"/>
         <source>current directory (short): %d</source>
-        <translation>dabartinis katalogas (prieštaravimai): %d</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/tabrenamewidget.cpp" line="87"/>
+        <location filename="../src/views/tabrenamewidget.cpp" line="108"/>
         <source>current directory (long): %D</source>
-        <translation>dabartinis katalogas (ilgai): %D</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/tabrenamewidget.cpp" line="88"/>
+        <location filename="../src/views/tabrenamewidget.cpp" line="109"/>
         <source>local host: %h</source>
-        <translation>lokalus serveris: %h</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>TermWidget</name>
     <message>
-        <location filename="../src/views/termwidget.cpp" line="469"/>
+        <location filename="../src/views/termwidget.cpp" line="483"/>
         <source>Copy</source>
-        <translation>Kopijuoti</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/termwidget.cpp" line="472"/>
+        <location filename="../src/views/termwidget.cpp" line="486"/>
         <source>Paste</source>
-        <translation>Įdėti</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/termwidget.cpp" line="481"/>
+        <location filename="../src/views/termwidget.cpp" line="495"/>
         <source>Open</source>
-        <translation>Atverti</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/termwidget.cpp" line="485"/>
+        <location filename="../src/views/termwidget.cpp" line="499"/>
         <source>Open in file manager</source>
-        <translation>Atverti failų tvarkytuvėje</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/termwidget.cpp" line="490"/>
-        <location filename="../src/views/termwidget.cpp" line="549"/>
+        <location filename="../src/views/termwidget.cpp" line="508"/>
         <source>Horizontal split</source>
-        <translation>Horizontalus dalijimas</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/termwidget.cpp" line="492"/>
-        <location filename="../src/views/termwidget.cpp" line="549"/>
+        <location filename="../src/views/termwidget.cpp" line="511"/>
         <source>Vertical split</source>
-        <translation>Vertikalus dalijimas</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/termwidget.cpp" line="503"/>
-        <location filename="../src/views/termwidget.cpp" line="549"/>
+        <location filename="../src/views/termwidget.cpp" line="521"/>
         <source>New tab</source>
-        <translation>Nauja kortelė</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/termwidget.cpp" line="510"/>
+        <location filename="../src/views/termwidget.cpp" line="528"/>
         <source>Exit fullscreen</source>
-        <translation>Išeiti iš viso ekrano</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/termwidget.cpp" line="512"/>
+        <location filename="../src/views/termwidget.cpp" line="530"/>
         <source>Fullscreen</source>
-        <translation>Visas ekranas</translation>
-    </message>
-    <message>
-        <location filename="../src/views/termwidget.cpp" line="515"/>
-        <source>Find</source>
-        <translation>Rasti</translation>
-    </message>
-    <message>
-        <location filename="../src/views/termwidget.cpp" line="519"/>
-        <source>Search</source>
-        <translation>Ieškoti</translation>
-    </message>
-    <message>
-        <location filename="../src/views/termwidget.cpp" line="529"/>
-        <source>Encoding</source>
-        <translation>Koduotė</translation>
-    </message>
-    <message>
-        <location filename="../src/views/termwidget.cpp" line="531"/>
-        <source>Custom commands</source>
-        <translation>Tinkintos komandos</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/views/termwidget.cpp" line="533"/>
-        <source>Remote management</source>
-        <translation>Nuotolinis administravimas</translation>
+        <source>Find</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/views/termwidget.cpp" line="537"/>
+        <source>Search</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/views/termwidget.cpp" line="547"/>
+        <source>Encoding</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/views/termwidget.cpp" line="549"/>
+        <source>Custom commands</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/views/termwidget.cpp" line="551"/>
+        <source>Remote management</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/views/termwidget.cpp" line="555"/>
         <source>Upload file</source>
-        <translation>Įkelti failą</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/termwidget.cpp" line="538"/>
+        <location filename="../src/views/termwidget.cpp" line="556"/>
         <source>Download file</source>
-        <translation>Atsisiųsti failą</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/views/termwidget.cpp" line="543"/>
+        <location filename="../src/views/termwidget.cpp" line="561"/>
         <source>Settings</source>
-        <translation>Nustatymai</translation>
-    </message>
-    <message>
-        <location filename="../src/views/termwidget.cpp" line="1200"/>
-        <source>The debuginfod settings will be effective after restart</source>
-        <translation>debuginfod nustatymai bus veiksmingi po atkūrimo</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>Utils</name>
     <message>
-        <location filename="../src/common/utils.cpp" line="198"/>
-        <location filename="../src/common/utils.cpp" line="232"/>
+        <location filename="../src/common/utils.cpp" line="189"/>
         <source>Cancel</source>
         <comment>button</comment>
-        <translation>Atsisakyti</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/common/utils.cpp" line="200"/>
+        <location filename="../src/common/utils.cpp" line="191"/>
         <source>Close</source>
         <comment>button</comment>
-        <translation>Užverti</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/common/utils.cpp" line="233"/>
-        <location filename="../src/common/utils.cpp" line="265"/>
+        <location filename="../src/common/utils.cpp" line="224"/>
         <source>OK</source>
         <comment>button</comment>
-        <translation>Gerai</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

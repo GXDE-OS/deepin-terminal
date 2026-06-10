@@ -167,7 +167,7 @@ void QTermWidget::search(QString txt, bool forwards, bool next)
 
     qDebug() << "current selection starts at: " << startColumn << startLine;
     qDebug() << "current cursor position: " << m_impl->m_terminalDisplay->screenWindow()->cursorPosition();
-    qDebug() << "current backwardsPosition" << m_lastBackwardsPosition << endl;
+    qDebug() << "current backwardsPosition" << m_lastBackwardsPosition;
 
     QString searchText(txt);
     // qDebug() << "regExp??????" << regExp.isEmpty();
@@ -321,7 +321,7 @@ void QTermWidget::addSnapShotTimer()
     m_termDisplay = m_impl->m_terminalDisplay;
     connect(m_interactionTimer, &QTimer::timeout, this, &QTermWidget::snapshot);
     connect(m_termDisplay.data(), &Konsole::TerminalDisplay::keyPressedSignal, this, &QTermWidget::interactionHandler);
-    connect(currSession, &Session::almostFinished, m_termDisplay, [ = ] {
+    connect(currSession, &Session::almostFinished, m_termDisplay, [=] {
         connect(m_termDisplay, &TerminalDisplay::keyPressedSignal, currSession, &Session::finished);
     });
 
@@ -349,6 +349,11 @@ void QTermWidget::interactionHandler()
 void QTermWidget::setIsAllowScroll(bool isAllowScroll)
 {
     m_impl->m_terminalDisplay->setIsAllowScroll(isAllowScroll);
+}
+
+void QTermWidget::enableSetCursorPosition(bool enable)
+{
+    m_impl->m_terminalDisplay->setCursorPositionEnable(enable);
 }
 
 /*******************************************************************************
@@ -403,7 +408,7 @@ void QTermWidget::startTerminalTeletype()
 void QTermWidget::init(int startnow)
 {
     m_layout = new QVBoxLayout();
-    m_layout->setMargin(0);
+    m_layout->setContentsMargins(0, 0, 0, 0);
     setLayout(m_layout);
 
     // translations
@@ -501,8 +506,16 @@ void QTermWidget::init(int startnow)
     connect(m_impl->m_session, &Session::cursorChanged, this, &QTermWidget::cursorChanged);
     connect(m_impl->m_session, &Session::shellWarningMessage, this, &QTermWidget::shellWarningMessage);
 
+    // Ctrl + Mouse click to move cursor: handle from TerminalDisplay
+    connect(m_impl->m_terminalDisplay, &TerminalDisplay::changedCursonPosition,
+            this, &QTermWidget::onChangedCursorPosition);
+
     //将终端活动状态传给SessionManager单例
     connect(this, SIGNAL(isTermIdle(bool)), SessionManager::instance(), SIGNAL(sessionIdle(bool)));
+
+    // Connect OSC52 signal from emulation
+    connect(m_impl->m_session, SIGNAL(osc52ClipboardRequest(char,QString)),
+            this, SIGNAL(osc52ClipboardRequest(char,QString)));
 }
 
 QTermWidget::~QTermWidget()
@@ -614,6 +627,17 @@ void QTermWidget::setTextCodec(QTextCodec *codec)
     if (!m_impl->m_session)
         return;
     m_impl->m_session->setCodec(codec);
+    QString str(codec->name());
+    if(str == "GB18030"){
+        setIsCodecGB18030(true);
+    }else{
+        setIsCodecGB18030(false);
+    }
+}
+
+void QTermWidget::setTerminalWordCharacters(const QString &wc)
+{
+    m_impl->m_terminalDisplay->setWordCharacters(wc);
 }
 
 void QTermWidget::setTerminalWordCharacters(const QString &wc)
@@ -709,6 +733,17 @@ void QTermWidget::scrollToEnd()
 void QTermWidget::setTrackOutput(bool enable)
 {
     m_impl->m_terminalDisplay->screenWindow()->setTrackOutput(enable);
+}
+
+/*******************************************************************************
+ 1. @函数:    isAtEndOfOutput
+ 2. @作者:    Deepin Terminal Fix
+ 3. @日期:    2025-03-26
+ 4. @说明:    检查当前是否在输出末尾，用于智能滚动
+*******************************************************************************/
+bool QTermWidget::isAtEndOfOutput() const
+{
+    return m_impl->m_terminalDisplay->screenWindow()->atEndOfOutput();
 }
 
 void QTermWidget::sendText(const QString &text)
@@ -995,6 +1030,29 @@ void QTermWidget::cursorChanged(Konsole::Emulation::KeyboardCursorShape cursorSh
     // TODO: A switch to enable/disable DECSCUSR?
     setKeyboardCursorShape(cursorShape);
     setBlinkingCursor(blinkingCursorEnabled);
+}
+
+// Handle Ctrl+Mouse click cursor reposition request from TerminalDisplay
+void QTermWidget::onChangedCursorPosition(int count)
+{
+    if (!m_impl || !m_impl->m_session) {
+        return;
+    }
+    // Send xterm-style sequence CSI <count> ` (Move cursor to absolute column)
+    // and CSI <count> d (Move cursor to absolute row) depending on sign.
+    // Here 'count' is a linear offset relative to current cursor position over the grid;
+    // to keep behavior reasonable, forward as a repeated Left/Right moves.
+    if (count == 0) {
+        return;
+    }
+
+    // Choose keys to emulate: positive → Right, negative → Left
+    const int steps = std::abs(count);
+    const int key = count > 0 ? Qt::Key_Right : Qt::Key_Left;
+    for (int i = 0; i < steps; ++i) {
+        QKeyEvent e(QEvent::KeyPress, key, Qt::NoModifier);
+        m_impl->m_session->sendKeyEvent(&e);
+    }
 }
 
 void QTermWidget::setMargin(int margin)
